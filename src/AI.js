@@ -261,7 +261,7 @@ AI = {
             flag = 1;
         else
             flag = -1;
-
+                    // -1
         camp = this.active_camp * flag;
 
         // 查找hash表，直接获取估值

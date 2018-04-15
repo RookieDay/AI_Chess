@@ -17,8 +17,8 @@ Game = {
     win_game: false,
     red_Campstep: 0,
     black_Camstep: 0,
-    score:0,  // 对战手数
-    scoreLabel:null,  // 对战手数的控件
+    scoreLabel_red: null,  // 对战红方手数的控件
+    scoreLabel_black: null,  // 对战黑方手数的控件
 
     // 当前可以移动的正营
     cur_camp : null,
@@ -71,17 +71,36 @@ Game = {
         layer.addChild(this.black_king_sprite);
 
 
+        // 红方手数/数量
+        var label_red = cocos.nodes.Label.create({string: '红方手数：', 
+                                          fontColor: '#000000',
+                                          fontName: 'Arial', 
+                                          fontSize: 18});
+        layer.addChild({child: label_red, z:1});
+        label_red.set('position', geo.ccp(78,105));
 
-        var label = cocos.nodes.Label.create("Score : ", "Arial", 20);
-        label.set('position', geo.ccp(700, 470));
-        layer.addChild(label);
-
-        this.scoreLabel = cocos.nodes.Label.create("0", "Arial", 20);
-        this.scoreLabel.set('position', geo.ccp(700,470));
-        layer.addChild(this.scoreLabel);
-
+        this.scoreLabel_red = cocos.nodes.Label.create({string: '0', 
+                                          fontColor: '#000000',
+                                          fontName: 'Arial', 
+                                          fontSize: 18});
+        layer.addChild({child: this.scoreLabel_red, z:1});
+        this.scoreLabel_red.set('position', geo.ccp(138,105));
 
 
+        // 黑方手数/数量
+        var label_black = cocos.nodes.Label.create({string: '黑方手数：', 
+                                          fontColor: '#000000',
+                                          fontName: 'Arial', 
+                                          fontSize: 18});
+        layer.addChild({child: label_black, z:1});
+        label_black.set('position', geo.ccp(78,340));
+
+        this.scoreLabel_black = cocos.nodes.Label.create({string: '0', 
+                                          fontColor: '#000000',
+                                          fontName: 'Arial', 
+                                          fontSize: 18});
+        layer.addChild({child: this.scoreLabel_black, z:1});
+        this.scoreLabel_black.set('position', geo.ccp(138,340));
 
     },
 
@@ -96,9 +115,11 @@ Game = {
     // 停止棋局
     stop : function() {
         this.cur_camp = null;
-        this.win_game = false
-        this.red_Campstep = 0
-        this.black_Camstep = 0
+        this.scoreLabel_red.set('string', '0');
+        this.scoreLabel_black.set('string', '0');    
+        this.win_game = false;
+        this.red_Campstep = 0;
+        this.black_Camstep = 0;
         this.king_count = 0;
         Board.clear_board();
         this.is_over = true;
@@ -106,9 +127,11 @@ Game = {
 
     // 重新开始
     restart : function() {
-        this.win_game = false
-        this.red_Campstep = 0
-        this.black_Camstep = 0
+        this.win_game = false;
+        this.scoreLabel_red.set('string', '0');
+        this.scoreLabel_black.set('string', '0');
+        this.red_Campstep = 0;
+        this.black_Camstep = 0;
         this.king_count = 0;
         Board.init_board();
         this.step();
@@ -187,21 +210,25 @@ Game = {
         this.red_king_sprite.set('visible', false);
         this.black_king_sprite.set('visible', false);
 
-        if(!this.win_game){
-           if (this.cur_camp == CAMP_RED) {
-                this.red_Campstep = this.red_Campstep + 1
-                this.player_black.stop();
-                this.player_red.run();
-            }
-            else {
-                this.black_Camstep = this.black_Camstep + 1
-                this.player_red.stop();
-                this.player_black.run();
-            }      
-            if(this.red_Campstep + this.black_Camstep > 10){
-                this.draw_chess();
-            }   
+       if (this.cur_camp == CAMP_RED) {
+            this.player_black.stop();
+            this.player_red.run();
         }
+        else {
+            this.player_red.stop();
+            this.player_black.run();
+        }      
+        if(this.red_Campstep + this.black_Camstep > 150){
+            this.draw_chess();
+        }   
+    },
+
+    set_Redscore : function (s) {
+        this.scoreLabel_red.set('string',String(s))
+    },
+
+    set_Blackscore : function (s) {
+        this.scoreLabel_black.set('string',String(s))
     },
 
     // 设置玩家
@@ -215,7 +242,17 @@ Game = {
     // 移动棋子
     move_chess : function(x, y, tx, ty, move_info) {
         // 移动棋子
-        if (Board.move_chess(x, y, tx, ty, move_info)) {
+        if (Board.move_chess(x, y, tx, ty, move_info) && !this.win_game) {
+
+            // 添加对战手数
+           if (this.cur_camp == CAMP_RED) {
+                this.red_Campstep = this.red_Campstep + 1
+                this.set_Redscore(String(this.red_Campstep))
+            }
+            else {
+                this.black_Camstep = this.black_Camstep + 1
+                this.set_Blackscore(String(this.black_Camstep))
+            }  
 
             // 切换阵营
             this.cur_camp = -this.cur_camp;
@@ -228,6 +265,10 @@ Game = {
     // 检查是否被将军
     check_king : function() {
         var move_list = MoveGenerator.create_possible_moves(-this.cur_camp);
+        var chesses = MoveGenerator.get_chesses()
+        if (this.check_chessState(chesses)) {
+            this.opp_win(-this.cur_camp)
+        }
         var king = R_KING * this.cur_camp;
         for (var i = 0; i < move_list.length; ++i) {
             var move = move_list[i];
@@ -246,6 +287,56 @@ Game = {
         }
     },
 
+    // 对将
+    opp_win : function(camp) {
+        var text;
+        if (camp == CAMP_RED)
+            text = '红方对将，黑方胜利';
+        else
+            text = '黑方对将，红方胜利';
+        this.win_game = true
+        // 回调
+        function callback(v) {
+            if (v == 'replay')
+                Game.restart();
+            else
+                Game.stop();
+        }
+
+        $.prompt(text, {
+            buttons : {
+                重新开始 : 'replay',
+                退出 : 'quit',
+            },
+            callback : callback,
+        });
+    },
+    // 检测对将
+    check_chessState: function (chesses) {
+        red_king = []
+        black_king = []
+        for (var y = 0; y < 10; ++y) {
+            for (var x = 0; x < 9; ++x) {
+                var chess = chesses[y][x];
+                if (chess == 5){
+                    red_king = [y,x]
+                }
+                if (chess == -5){
+                    black_king = [y,x]
+                }
+            }
+        }
+        // 判断king是否在同一列
+        if (red_king[1] == black_king[1]) {
+            for(var y = 0; y < 10; ++y) {
+                var chess = chesses[y][black_king[1]]
+                if (chess != 0 && chess != 5 && chess != -5) {
+                    return false
+                }
+            }
+        }
+        return true;  
+    },
     // 监听：棋子被杀掉
     on_chess_killed: function(chess) {
         if (chess.name == 'R_KING')

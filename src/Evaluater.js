@@ -38,7 +38,7 @@ _chess_values[7 + B_CANNON]     = VAL_CANNON;
 _chess_values[7 + B_KING]       = VAL_KING;
 
 // 不同棋子的灵活度
-var FLEXIBILITY_PAWN        = 15
+var FLEXIBILITY_PAWN        = 15 
 var FLEXIBILITY_BISHOP      = 1
 var FLEXIBILITY_ELEPHANT    = 1
 var FLEXIBILITY_CAR         = 6
@@ -47,7 +47,7 @@ var FLEXIBILITY_CANNON      = 6
 var FLEXIBILITY_KING        = 0
 
 var _chess_fexibility = []
-
+//  卒 士 象 车 马 炮 将
 _chess_fexibility[7 + R_PAWN]       = FLEXIBILITY_PAWN;
 _chess_fexibility[7 + R_BISHOP]     = FLEXIBILITY_BISHOP;
 _chess_fexibility[7 + R_ELEPHANT]   = FLEXIBILITY_ELEPHANT;

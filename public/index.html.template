@@ -10,7 +10,7 @@
                 font-size: 10pt;
                 background: #ddd;
             }
-            h1 {
+            h1,h3 {
                 text-align: center;
                 text-shadow: 0 2px 1px #fff;
             }
@@ -44,6 +44,7 @@
     </head> 
     <body> 
         <h1>中国象棋</h1>
+        <h3>郭亮/任高云/吉爱清</h3>
        <div id="jschess_app">Jschess is loading...</div>
     </body> 
 </html> 
