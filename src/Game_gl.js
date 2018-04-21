@@ -328,14 +328,15 @@ Game = {
         }
         // 判断king是否在同一列
         if (red_king[1] == black_king[1]) {
-            for(var y = 0; y < 10; ++y) {
+            for(var y = black_king[0]+1; y < red_king[0]; ++y) {
                 var chess = chesses[y][black_king[1]]
-                if (chess != 0 && chess != 5 && chess != -5) {
+                if (chess != 0) {
                     return false
                 }
-            }
+			}	
+            return true
         }
-        return true;  
+        return false;  
     },
     // 监听：棋子被杀掉
     on_chess_killed: function(chess) {

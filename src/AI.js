@@ -3,7 +3,7 @@
 // 下棋的AI
 
 require('Evaluater')
-
+// var json_file = require('test.json')
 var MAX_BOUND = 9999999;
 var MIN_BOUND = -MAX_BOUND;
 
@@ -45,6 +45,7 @@ AI = {
     chess_hash_checksums : [],
     chess_hash_items : [{}, {}],
 
+
     // 初始化
     init : function() {
         this._init_hash_key();
@@ -59,7 +60,6 @@ AI = {
         this.active_camp = camp;
         this._reset_history_table();
         this._calc_cur_hash_key();
-
         // 如果棋子个数少，增加搜索深度
         var depth_levels = [16, 8, 6, 4]; 
         for (var i = 0; i < depth_levels.length; ++i) {
@@ -70,6 +70,14 @@ AI = {
         this.start_time = new Date().getTime();
 
         var val = this._alpha_beta(0, MIN_BOUND, MAX_BOUND);
+
+        $.ajax({
+          dataType: 'json',
+          url: './__jah__/test.json',
+          success: function(data){
+            console.log('ajahahah ')
+          }
+        });
 
         this.end_time = new Date().getTime();
 

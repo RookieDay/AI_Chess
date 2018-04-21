@@ -14,6 +14,9 @@ require('Board')
 Game = {
     chess_render : null,
     king_count : 0,
+	first_king_chess : 0,    //是否第一次将军
+	king_chess : 0,          //保存上一次将军棋子
+	king_chess_step : 0,          //保存上一次将军手数
     win_game: false,
     red_Campstep: 0,
     black_Camstep: 0,
@@ -121,7 +124,10 @@ Game = {
         this.red_Campstep = 0;
         this.black_Camstep = 0;
         this.king_count = 0;
-        Board.clear_board();
+	    this.first_king_chess = 0;    //是否第一次将军
+	    this.king_chess = 0;          //保存上一次将军棋子
+        this.king_chess_step = 0;       //保存上一次将军手数
+		Board.clear_board();
         this.is_over = true;
     },
 
@@ -133,7 +139,10 @@ Game = {
         this.red_Campstep = 0;
         this.black_Camstep = 0;
         this.king_count = 0;
-        Board.init_board();
+		this.first_king_chess = 0;    //是否第一次将军
+	    this.king_chess = 0;          //保存上一次将军棋子
+        this.king_chess_step = 0;       //保存上一次将军手数
+		Board.init_board();
         this.step();
     },
 
@@ -274,17 +283,42 @@ Game = {
             var move = move_list[i];
             var tc = MoveGenerator.get_chess(move.tx, move.ty);
             if (tc == king) {
-                this.king_count = this.king_count + 1
-                if (this.cur_camp == CAMP_RED)
-                    this.red_king_sprite.set('visible', true);
-                else
-                    this.black_king_sprite.set('visible', true);
-                if(this.king_count > 2) {
-                    this.win(this.cur_camp == CAMP_RED?CAMP_BLACK:CAMP_RED,true);
-                }
-            }
-
-        }
+                if(this.first_king_chess == 0){   //第一次将军
+					this.king_chess = chesses[move.fy][move.fx]  //保存上一次将军棋子
+					this.king_chess_step = this.red_Campstep     //保存上一次将军手数
+					this.king_count = 1                          //将军次数累计
+					this.first_king_chess = 1
+					if (this.cur_camp == CAMP_RED)
+						this.red_king_sprite.set('visible', true);
+					else
+						this.black_king_sprite.set('visible', true);
+					//if(this.king_count > 2) {
+						//this.win(this.cur_camp == CAMP_RED?CAMP_BLACK:CAMP_RED,true);
+				}
+				else if(this.king_chess_step == (this.red_Campstep - 1) && this.king_chess ==chesses[move.fy][move.fx]){  //同一棋子且连续手数将军
+					this.king_count = this.king_count + 1    //将军次数累加
+					this.king_chess = chesses[move.fy][move.fx]
+					this.king_chess_step = this.red_Campstep
+					if (this.cur_camp == CAMP_RED)
+						this.red_king_sprite.set('visible', true);
+					else
+						this.black_king_sprite.set('visible', true);
+					if(this.king_count > 2) {
+						this.win(this.cur_camp == CAMP_BLACK?CAMP_BLACK:CAMP_RED,true);
+					}
+				}
+				else{
+					this.king_chess = chesses[move.fy][move.fx]
+					this.king_chess_step = this.red_Campstep
+					if (this.cur_camp == CAMP_RED)
+						this.red_king_sprite.set('visible', true);
+					else
+						this.black_king_sprite.set('visible', true);
+					this.king_count = 1     //将军次数清零
+				}					
+			}
+				
+		}
     },
 
     // 对将
