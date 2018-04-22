@@ -26,7 +26,7 @@ MoveGenerator = {
 
     // 所有棋子，二维数组，保存棋子名称
     chesses : [],
-
+    origin_chesses : [],
     // 移动列表[depth, move_list]
     move_list : [],
 
@@ -45,6 +45,14 @@ MoveGenerator = {
                 this.chesses[y][x] = _chesses[name];
             }
         }
+    },
+    // 获取棋子布局
+    set_origin_chesses : function(chess_pass) {
+        this.origin_chesses = chess_pass;
+    },
+    // 获取变动前棋子布局
+    get_origin_chesses : function() {
+        return this.origin_chesses;
     },
 
     // 获取棋子布局

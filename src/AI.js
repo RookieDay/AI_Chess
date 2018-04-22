@@ -1,8 +1,8 @@
 // AI.js
 // Created by MonkeyShen 2012
 // 下棋的AI
-
 require('Evaluater')
+require('Util')
 // var json_file = require('test.json')
 var MAX_BOUND = 9999999;
 var MIN_BOUND = -MAX_BOUND;
@@ -33,6 +33,8 @@ AI = {
 
     // 历史表，剪枝成功，记录下来，以后排前面，加速剪枝
     history_table : [],
+    red_CampMSG : [],
+    black_CampMSG : [],
 
     // 时间
     start_time : 0,
@@ -71,19 +73,25 @@ AI = {
 
         var val = this._alpha_beta(0, MIN_BOUND, MAX_BOUND);
 
-        $.ajax({
-          dataType: 'json',
-          url: './__jah__/test.json',
-          success: function(data){
-            console.log('ajahahah ')
-          }
-        });
-
+        // $.ajax({
+        //   type: "POST",
+        //   url: "http://localhost:3000",
+        //   crossDomain:true, 
+        //   dataType: "json",
+        //   data:JSON.stringify({name: "Dennis", address: {city: "Dub", country: "IE"}})
+        //             }).done(function ( data ) {
+        //                     alert("ajax callback response:"+JSON.stringify(data));
+        // })
+        
         this.end_time = new Date().getTime();
 
         // 执行计算出来的走法
         var m = this.best_move;
         Game.move_chess(m.fx, m.fy, m.tx, m.ty, {move_action : true});
+        // chesses_before = MoveGenerator.get_origin_chesses()
+        // chesses_after = MoveGenerator.get_chesses()
+        // this.store_tranisition(camp,m,val,MoveGenerator.get_chesses())
+
         console.log('depth = ', this.max_depth);
         console.log('break time = ', this.break_time);
         console.log('search time = ', this.search_time);
@@ -91,7 +99,29 @@ AI = {
         console.log('score = ', val);
         console.log('time = ', (this.end_time - this.start_time) / 1000);
     },
+    store_tranisition : function(camp,move,val,chesses_store){
+        chesses_pre = chesses_store
+        var fc = chesses_pre[move.fy][move.fx];
+        var tc = chesses_pre[move.ty][move.tx];
+        chesses_pre[move.ty][move.tx] = NOCHESS;
+        chesses_pre[move.fy][move.fx] = tc;
 
+        if (camp == CAMP_RED) {
+            console.log('a')
+            for (var y = 0; y < 10; ++y) {
+                for (var x = 0; x < 9; ++x) {
+                    var chess = chesses_store[y][x];
+                    if (chess == 5){
+                        red_king = [y,x]
+                    }
+                    if (chess == -5){
+                        black_king = [y,x]
+                    }
+                }
+            }
+        }
+
+    },
     // 设置最大深度
     set_max_depth : function(depth) {
         this.max_depth = depth;
