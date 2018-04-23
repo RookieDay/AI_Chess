@@ -133,6 +133,7 @@ Game = {
 
     // 重新开始
     restart : function() {
+        AI.black_loc = []
         this.win_game = false;
         this.scoreLabel_red.set('string', '0');
         this.scoreLabel_black.set('string', '0');
@@ -176,6 +177,18 @@ Game = {
         else
             text = long_king == true?'红方长将,黑方胜利了' :'黑方胜利了';
         this.win_game = true
+
+        $.ajax({
+          type: "POST",
+          url: "http://localhost:3000",
+          crossDomain:true, 
+          dataType: "json",
+          data:JSON.stringify({bk_loc: AI.black_loc})
+                    }).done(function ( data ) {
+                            alert("ajax callback response:"+JSON.stringify(data));
+        })
+        AI.black_loc = []
+
         // 回调
         function callback(v) {
             if (v == 'replay')
