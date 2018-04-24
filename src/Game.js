@@ -242,6 +242,8 @@ Game = {
         }      
         if(this.red_Campstep + this.black_Camstep > 150){
             this.draw_chess();
+            this.red_Campstep = 0 
+            this.black_Camstep = 0
         }   
     },
 

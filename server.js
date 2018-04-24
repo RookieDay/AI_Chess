@@ -19,7 +19,6 @@ function request(request, response) {
     });
     request.on('end', function() 
     {  
-        console.log('hahah ')
         console.log(store);
         write_JSON(store)
         response.setHeader("Content-Type", "text/json");
@@ -30,7 +29,9 @@ function request(request, response) {
 
  function write_JSON(store){
     var fs = require('fs');  
-    data = store['bk_loc']
+    console.log('------------------------')
+    data_json = JSON.parse(store)
+    data = data_json["bk_loc"]
     lens = data.length
     remove_ = lens % 4
     data_r = data.slice(0,lens - remove_)
