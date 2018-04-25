@@ -35,7 +35,7 @@ function request(request, response) {
     lens = data.length
     remove_ = lens % 4
     data_r = data.slice(0,lens - remove_)
-    fs.appendFile('./ajax.log',data_r,'utf8',function(err){  
+    fs.appendFile('./ajax.json',data_r,'utf8',function(err){  
         if(err)  
         {  
             console.log('write failed');  

@@ -39,7 +39,7 @@ if __name__ == "__main__":
     # maze game
     # env = Maze()
     env = gym.make('Skiing-ram-v0')
-    RL = DeepQNetwork(3, 128,
+    RL = DeepQNetwork(32, 176,
                       learning_rate=0.01,
                       reward_decay=0.9,
                       e_greedy=0.9,
