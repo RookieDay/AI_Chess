@@ -28,16 +28,18 @@ class Maze(tk.Tk, object):
         self.n_actions = len(self.action_space)
         self.n_features = 2
         self.title('maze')
+        # 第一个数横大小，第二个数纵大小
         self.geometry('{0}x{1}'.format(MAZE_H * UNIT, MAZE_H * UNIT))
         self._build_maze()
 
     def _build_maze(self):
+        # 创建一个Canvas，设置其背景色为白色 高 宽
         self.canvas = tk.Canvas(self, bg='white',
                            height=MAZE_H * UNIT,
                            width=MAZE_W * UNIT)
-
-        # create grids
-        for c in range(0, MAZE_W * UNIT, UNIT):
+  
+        # create grids  设置线的 起点和终点 range(start, stop[, step])
+        for c in range(0, MAZE_W * UNIT, UNIT): 
             x0, y0, x1, y1 = c, 0, c, MAZE_H * UNIT
             self.canvas.create_line(x0, y0, x1, y1)
         for r in range(0, MAZE_H * UNIT, UNIT):
@@ -47,7 +49,7 @@ class Maze(tk.Tk, object):
         # create origin
         origin = np.array([20, 20])
 
-        # hell
+        # hell 创建黑色方块
         hell1_center = origin + np.array([UNIT * 2, UNIT])
         self.hell1 = self.canvas.create_rectangle(
             hell1_center[0] - 15, hell1_center[1] - 15,
@@ -60,14 +62,14 @@ class Maze(tk.Tk, object):
         #     hell2_center[0] + 15, hell2_center[1] + 15,
         #     fill='black')
 
-        # create oval
+        # create oval 创建黄色宝藏
         oval_center = origin + UNIT * 2
         self.oval = self.canvas.create_oval(
             oval_center[0] - 15, oval_center[1] - 15,
             oval_center[0] + 15, oval_center[1] + 15,
             fill='yellow')
 
-        # create red rect
+        # create red rect 创建红色移动方块
         self.rect = self.canvas.create_rectangle(
             origin[0] - 15, origin[1] - 15,
             origin[0] + 15, origin[1] + 15,
@@ -79,16 +81,20 @@ class Maze(tk.Tk, object):
     def reset(self):
         self.update()
         time.sleep(0.1)
+        # 重启删除红色方块
         self.canvas.delete(self.rect)
         origin = np.array([20, 20])
+        # 重新创建红色矩形
         self.rect = self.canvas.create_rectangle(
             origin[0] - 15, origin[1] - 15,
             origin[0] + 15, origin[1] + 15,
             fill='red')
         # return observation
+        # 返回相应ID代表的图形的当前坐标（左上角和右上角坐标）  
         return (np.array(self.canvas.coords(self.rect)[:2]) - np.array(self.canvas.coords(self.oval)[:2]))/(MAZE_H*UNIT)
 
     def step(self, action):
+        # 返回红色方块的位置
         s = self.canvas.coords(self.rect)
         base_action = np.array([0, 0])
         if action == 0:   # up
