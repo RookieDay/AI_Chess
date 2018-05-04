@@ -183,11 +183,12 @@ Game = {
           url: "http://localhost:3000",
           crossDomain:true, 
           dataType: "json",
+          // JSON.stringify()用于从一个对象解析出字符串
           data:JSON.stringify({bk_loc: AI.black_loc})
                     }).done(function ( data ) {
                             alert("ajax callback response:"+JSON.stringify(data));
         })
-        AI.black_loc = []
+
 
         // 回调
         function callback(v) {

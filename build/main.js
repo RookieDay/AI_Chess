@@ -3,8 +3,9 @@ __jah__.resources["/AI.js"] = {data: function (exports, require, module, __filen
 // AI.js
 // Created by MonkeyShen 2012
 // 下棋的AI
+
 require('Evaluater')
-// var json_file = require('test.json')
+
 var MAX_BOUND = 9999999;
 var MIN_BOUND = -MAX_BOUND;
 
@@ -46,6 +47,426 @@ AI = {
     chess_hash_checksums : [],
     chess_hash_items : [{}, {}],
 
+    // 棋盘信息
+    black_loc: [],
+
+
+    // 初始化
+    init : function() {
+        this._init_hash_key();
+    },
+
+    // 下一步棋
+    play_a_chess : function(camp) {
+        this.best_move = null;
+        this.break_time = 0;
+        this.search_time = 0;
+        this.hash_hit_time = 0;
+        this.active_camp = camp;
+        this._reset_history_table();
+        this._calc_cur_hash_key();
+
+        // 如果棋子个数少，增加搜索深度
+        var depth_levels = [16, 8, 6, 4]; 
+        for (var i = 0; i < depth_levels.length; ++i) {
+            if (Board.chess_num <= depth_levels[i])
+                this.max_depth ++;
+        }
+
+        this.start_time = new Date().getTime();
+        
+        var val = this._alpha_beta(0, MIN_BOUND, MAX_BOUND);
+
+        this.end_time = new Date().getTime();
+
+        // 执行计算出来的走法
+        var m = this.best_move;
+
+        Game.move_chess(m.fx, m.fy, m.tx, m.ty, {move_action : true});
+        var cur_chess = MoveGenerator.get_chesses()
+        // var myArray=new Array()
+        // myArray = cur_chess
+        this.store_tranisition(camp,m,val,cur_chess)
+        console.log('depth = ', this.max_depth);
+        console.log('break time = ', this.break_time);
+        console.log('search time = ', this.search_time);
+        console.log('hash hit time = ', this.hash_hit_time);
+        console.log('score = ', val);
+        console.log('time = ', (this.end_time - this.start_time) / 1000);
+    },
+    store_tranisition : function(camp,move,val,chesses_store){
+
+        if(camp == CAMP_RED){
+            var arr = []
+            for (var y = 0; y < 10; ++y) {
+                var s = []
+                for (var x = 0; x < 9; ++x) {
+                    s.push(chesses_store[y][x]);
+                }
+                arr[y] = s
+            }
+            // arr.push(chesses_store)
+            // this.black_loc.push([chesses_store[0],chesses_store[1],chesses_store[2],chesses_store[3],chesses_store[4],chesses_store[5],chesses_store[6],chesses_store[7],chesses_store[8],chesses_store[9]])
+            this.black_loc.push(arr);
+        }
+        if(camp == CAMP_BLACK){
+            this.black_loc.push([move['fx'],move['fy'],move['tx'],move['ty']]) ;
+            this.black_loc.push(val)          ;
+        }
+
+    },
+
+    // 设置最大深度
+    set_max_depth : function(depth) {
+        this.max_depth = depth;
+    },
+
+    // 重置历史表
+    _reset_history_table : function() {
+        this.history_table = new Array(90);
+        for (var f = 0; f < 90; ++f) {
+            this.history_table[f] = new Array(90);
+            for (var t = 0; t < 90; ++t) {
+                this.history_table[f][t] = 10;
+            }
+        }
+    },
+
+    // 计算hash键值
+    _init_hash_key : function(chesses) {
+        this.chess_hash_keys = new Array(15);
+        this.chess_hash_checksums = new Array(15);
+        for (var c = 0; c < 15; ++c) {
+            this.chess_hash_keys[c] = new Array(10);
+            this.chess_hash_checksums[c] = new Array(10);
+            for (var y = 0; y < 10; ++y) {
+                this.chess_hash_keys[c][y] = new Array(9);
+                this.chess_hash_checksums[c][y] = new Array(9);
+                for (var x = 0; x < 9; ++x) {
+                    this.chess_hash_keys[c][y][x] = Math.random() * Math.pow(2, 32);
+                    this.chess_hash_checksums[c][y][x] = Math.random() * Math.pow(2, 32);
+                }
+            }
+        }
+    },
+
+    // 计算当前的hash值
+    _calc_cur_hash_key : function() {
+        var chesses = MoveGenerator.get_chesses();
+
+        var key = 0;
+        var checksum = 0;
+
+        for (var y = 0; y < 10; ++y) {
+            for (var x = 0; x < 9; ++x) {
+                var chess = chesses[y][x];
+                if (chess != NOCHESS) {
+                    key = key ^ this.chess_hash_keys[chess + 7][y][x];
+                    checksum = checksum ^ this.chess_hash_checksums[chess + 7][y][x];
+                }
+            }
+        }
+        
+        this.chess_hash_key = key;
+        this.chess_hash_checksum = checksum;
+    },
+
+    // 查找hash表，看看能不能直接获取估值
+    _lookup_hash_table : function(alpha, beta, depth, camp) {
+        var table_id = (camp == CAMP_RED ? 0 : 1);
+        var item = this.chess_hash_items[table_id][this.chess_hash_key];
+
+        if (item == null)
+            return null;
+
+        // 检查checksum
+        if (item.checksum != this.chess_hash_checksum) {
+            return null;
+        }
+
+        // 检查深度（深度过深的估值不准）
+        if (item.depth > depth) {
+            return null;
+        }
+
+        if (item.type == HASH_TYPE_EXACT)
+            return item.score;
+        else if (item.type == HASH_TYPE_LOWER_BOUND)
+            if (item.score >= beta)
+                return item.score;
+        else if (item.type == HASH_TYPE_UPPER_BOUND)
+            if (item.score <= alpha)
+                return item.score;
+
+        return null;
+    },
+
+    // 把当前局面信息记录进hash表
+    _record_hash_table : function(type, score, depth, camp) {
+        var table_id = (camp == CAMP_RED ? 0 : 1);
+        var item = {
+            type : type,
+            depth : depth,
+            checksum : this.chess_hash_checksum,
+            score : score,
+        };
+        this.chess_hash_items[table_id][this.chess_hash_key] = item;
+    },
+
+    // hash移动一次，修改当前局面的hash值
+    _hash_make_move : function(move) {
+        var key = this.chess_hash_key;
+        var checksum = this.chess_hash_checksum;
+
+        key = key ^ this.chess_hash_keys[move.fc + 7][move.fy][move.fx];
+        checksum = checksum ^ this.chess_hash_checksums[move.fc + 7][move.fy][move.fx];
+
+        if (move.tc != NOCHESS) {
+            key = key ^ this.chess_hash_keys[move.tc + 7][move.ty][move.tx];
+            checksum = checksum ^ this.chess_hash_checksums[move.tc + 7][move.ty][move.tx];
+        }
+
+        key = key ^ this.chess_hash_keys[move.fc + 7][move.ty][move.tx];
+        checksum = checksum ^ this.chess_hash_checksums[move.fc + 7][move.ty][move.tx];
+
+        this.chess_hash_key = key;
+        this.chess_hash_checksum = checksum;
+    },
+
+    // hash反向移动一次，修改当前局面的hash值
+    _hash_unmake_move : function(move) {
+        var key = this.chess_hash_key;
+        var checksum = this.chess_hash_checksum;
+
+        key = key ^ this.chess_hash_keys[move.fc + 7][move.ty][move.tx];
+        checksum = checksum ^ this.chess_hash_checksums[move.fc + 7][move.ty][move.tx];
+
+        key = key ^ this.chess_hash_keys[move.fc + 7][move.fy][move.fx];
+        checksum = checksum ^ this.chess_hash_checksums[move.fc + 7][move.fy][move.fx];
+        
+        if (move.tc != NOCHESS) {
+            key = key ^ this.chess_hash_keys[move.tc + 7][move.ty][move.tx];
+            checksum = checksum ^ this.chess_hash_checksums[move.tc + 7][move.ty][move.tx];
+        }
+
+        this.chess_hash_key = key;
+        this.chess_hash_checksum = checksum;
+    },
+
+    // 记录进历史表
+    _record_history_score : function(move, depth) {
+        var f = move.fy * 9 + move.fx;
+        var t = move.ty * 9 + move.tx;
+        this.history_table[f][t] += 2 << depth;
+    },
+
+    // 获取历史值
+    _get_history_score : function(move, depth) {
+        var f = move.fy * 9 + move.fx;
+        var t = move.ty * 9 + move.tx;
+        return this.history_table[f][t];
+    },
+
+    // 虚拟地走一步
+    _move : function(move) {
+        MoveGenerator.move_chess(move);
+    },
+
+    // 虚拟返回一步
+    _unmove : function(move) {
+        MoveGenerator.unmove_chess(move);
+    },
+
+    // alpha-beta搜索
+    _alpha_beta : function(depth, alpha, beta) {
+        var a =  0;
+        var bestmove = null;
+
+        // 增加搜索次数
+        this.search_time++;
+
+        // 决定阵营
+        var camp;
+        var flag;
+
+        if (depth % 2 == 0)
+            flag = 1;
+        else
+            flag = -1;
+
+        camp = this.active_camp * flag;
+
+        // 查找hash表，直接获取估值
+        if (depth > 0) {
+            var score = this._lookup_hash_table(alpha, beta, depth, camp);
+            if (score != null) {
+                this.hash_hit_time ++;
+                return score;
+            }
+        }
+
+        // 如果已经搜索到最后一层
+        if(depth == this.max_depth) {
+            // 估值
+            var val = Evaluater.evalute(MoveGenerator.get_chesses(), camp);
+            this._record_hash_table(HASH_TYPE_EXACT, val, depth, camp);
+            return val;
+        }
+
+        // 创建所有可能的走法
+        var move_list = MoveGenerator.create_possible_moves(camp, depth);
+
+        // 初始化历史值
+        for (var i = 0; i < move_list.length; ++i) {
+            var move = move_list[i];
+            move.score = this._get_history_score(move, depth, camp);
+        }
+
+        // 对move_list排一下序，提高剪枝准确性
+        move_list.sort(function (a, b) {
+            return b.score - a.score;
+        });
+
+        // 是否被剪枝
+        var is_cutted = false;
+
+        for(var i =0; i < move_list.length ; ++i) {
+            var move = move_list[i];
+
+            this._move(move);
+
+            // 检查一下是不是把王给灭了
+            if (move.tc == R_KING || move.tc == B_KING) {
+
+                this._unmove(move);
+
+                // 记录最佳走法
+                if (depth == 0) {
+                    this.best_move = move;
+                }
+
+                // 直接返回一个很高的分，就是这一步了
+                return 18888;
+            }
+            else {
+                this._hash_make_move(move);
+
+                score = -this._alpha_beta(depth +1, -beta, -alpha);
+
+                this._hash_unmake_move(move);
+                this._unmove(move);
+            }
+
+            // 如果发现比上限要好
+            if (score  > alpha) {
+                // 保留最大值
+                alpha = score;
+                bestmove = move;
+
+                // 记录最佳走法
+                if (depth == 0) {
+                    this.best_move = move;
+                }
+            }
+
+            // 剪枝
+            if (score >= beta) {
+                this.break_time ++;
+
+                // 记录历史
+                this._record_history_score(move, depth);
+
+                // 记录hash
+                this._record_hash_table(HASH_TYPE_LOWER_BOUND, score, depth, camp);
+                
+                // 直接返回
+                return score;
+            }
+        }
+
+        // 将最佳走法记录进历史表，虽然它没有造成剪枝
+        if (bestmove != null) {
+            this._record_hash_table(bestmove, depth);
+            this._record_hash_table(HASH_TYPE_EXACT, alpha, depth, camp);
+        }
+        else {
+            this._record_hash_table(HASH_TYPE_UPPER_BOUND, alpha, depth, camp);
+        }
+
+        return alpha;
+    }
+}
+
+}, mimetype: "application/javascript", remote: false}; // END: /AI.js
+
+
+__jah__.resources["/AI_bk.js"] = {data: function (exports, require, module, __filename, __dirname) {
+// AI.js
+// Created by MonkeyShen 2012
+// 下棋的AI
+require('Evaluater')
+require('Util')
+// var json_file = require('test.json')
+var MAX_BOUND = 9999999;
+var MIN_BOUND = -MAX_BOUND;
+
+var HASH_TYPE_EXACT = 0;
+var HASH_TYPE_LOWER_BOUND = 1;
+var HASH_TYPE_UPPER_BOUND = 2;
+
+AI = {
+
+    // 当前激活的阵营
+    active_camp : null,
+
+    // 搜索深度
+    max_depth : 3,
+
+    // 搜索次数
+    search_time : 0,
+
+    // 剪枝次数
+    break_time : 0,
+
+    // hash表访问成功次数
+    hash_hit_time : 0,
+
+    // 最佳走法
+    best_move : null,
+
+    // 历史表，剪枝成功，记录下来，以后排前面，加速剪枝
+    history_table : [],
+    // add now to store traninstion
+    arr_B_CAR : [],
+    arr_B_HORSE : [],
+    arr_B_ELEPHANT : [],
+    arr_B_BISHOP : [],
+    arr_B_KING : [],
+    arr_B_CANNON : [],
+    arr_B_PAWN : [],
+    arr_R_CAR : [],
+    arr_R_HORSE : [],
+    arr_R_ELEPHANT : [],
+    arr_R_BISHOP : [],
+    arr_R_KING : [],
+    arr_R_CANNON : [],
+    arr_R_PAWN : [],
+    arr_NOCHESS : [],
+
+    black_loc: [],
+    camp_MSG : [],
+
+    // 时间
+    start_time : 0,
+    end_time : 0,
+
+    // hash相关
+    chess_hash_key : null,
+    chess_hash_checksum : null,
+    chess_hash_keys : [],
+    chess_hash_checksums : [],
+    chess_hash_items : [{}, {}],
+
 
     // 初始化
     init : function() {
@@ -72,50 +493,26 @@ AI = {
 
         var val = this._alpha_beta(0, MIN_BOUND, MAX_BOUND);
 
-        var js = {
-                "classid": 1,
-                "zlclass": "测试"
-            };
         // $.ajax({
-        //   dataType: 'json',
-        //   url: './__jah__/test.json',
-        //   success: function(data){
-        //     console.log('ajahahah ')
-        //   }
-        // });
-
-                    // 实际工作中就这样用
-        // $.ajax({
-        //         type: 'GET',
-        //         dataType: "json",//回调函数接收数据的数据格式  
-        //         url: 'http://127.0.0.1/jquery.php',
-        //         data:  {data: JSON.stringify(js)},
-        //         success: function (data) {
-        //             console.log('hhahaah');
-
-        //             // $('p').html(data);
-        //         },
-        //         error: function () {
-        //             console.log('erreor')
-        //         }
-        //     });
-        $.ajax
-        ({
-          type: "POST",
-          url: "http://localhost:8000",
-          crossDomain:true, 
-          dataType: "json",
-          data:JSON.stringify({name: "Dennis", address: {city: "Dub", country: "IE"}})
-         }).done(function ( data ) {
-              alert("ajax callback response:"+JSON.stringify(data));
-           })
-  
-
+        //   type: "POST",
+        //   url: "http://localhost:3000",
+        //   crossDomain:true, 
+        //   dataType: "json",
+        //   data:JSON.stringify({name: "Dennis", address: {city: "Dub", country: "IE"}})
+        //             }).done(function ( data ) {
+        //                     alert("ajax callback response:"+JSON.stringify(data));
+        // })
+        
         this.end_time = new Date().getTime();
 
         // 执行计算出来的走法
         var m = this.best_move;
         Game.move_chess(m.fx, m.fy, m.tx, m.ty, {move_action : true});
+        this.store_tranisition(camp,m,val,MoveGenerator.get_chesses())
+
+        // chesses_before = MoveGenerator.get_origin_chesses()
+        // chesses_after = MoveGenerator.get_chesses()
+
         console.log('depth = ', this.max_depth);
         console.log('break time = ', this.break_time);
         console.log('search time = ', this.search_time);
@@ -123,7 +520,168 @@ AI = {
         console.log('score = ', val);
         console.log('time = ', (this.end_time - this.start_time) / 1000);
     },
+    store_tranisition : function(camp,move,val,chesses_store){
 
+
+        for (var y = 0; y < 10; ++y) {
+            for (var x = 0; x < 9; ++x) {
+                var chess = chesses_store[y][x];
+                if (chess == NOCHESS){
+                    break;
+                }
+
+                // black 
+                if (chess == B_CAR){
+                    this.arr_B_CAR.push([y,x]) 
+                }
+                if (chess == B_HORSE){
+                    this.arr_B_HORSE.push([y,x]) 
+                }
+                if (chess == B_ELEPHANT){
+                    this.arr_B_ELEPHANT.push([y,x]) 
+                }
+                if (chess == B_BISHOP){
+                    this.arr_B_BISHOP.push([y,x]) 
+                }
+                if (chess == B_KING){
+                    this.arr_B_KING.push([y,x]) 
+                }
+                if (chess == B_CANNON){
+                    this.arr_B_CANNON.push([y,x]) 
+                }
+                if (chess == B_PAWN){
+                    this.arr_B_PAWN.push([y,x]) 
+                }
+
+                // red 
+                if (chess == R_CAR){
+                    this.arr_R_CAR.push([y,x]) 
+                }
+                if (chess == R_HORSE){
+                    this.arr_R_HORSE.push([y,x]) 
+                }
+                if (chess == R_ELEPHANT){
+                    this.arr_R_ELEPHANT.push([y,x]) 
+                }
+                if (chess == R_BISHOP){
+                    this.arr_R_BISHOP.push([y,x]) 
+                }
+                if (chess == R_KING){
+                    this.arr_R_KING.push([y,x]) 
+                }
+                if (chess == R_CANNON){
+                    this.arr_R_CANNON.push([y,x]) 
+                }
+                if (chess == B_PAWN){
+                    this.arr_R_PAWN.push([y,x]) 
+                }
+            }
+        }
+
+        while(this.arr_B_CAR.length != 2){
+            this.arr_B_CAR.push([-1,-1])
+        } 
+        while(this.arr_B_HORSE.length != 2){
+            this.arr_B_HORSE.push([-1,-1])
+        } 
+        while(this.arr_B_ELEPHANT.length != 2){
+            this.arr_B_ELEPHANT.push([-1,-1])
+        } 
+        while(this.arr_B_BISHOP.length != 2){
+            this.arr_B_BISHOP.push([-1,-1])
+        } 
+        while(this.arr_B_KING.length != 2){
+            this.arr_B_KING.push([-1,-1])
+        } 
+        while(this.arr_B_CANNON.length != 2){
+            this.arr_B_CANNON.push([-1,-1])
+        } 
+        while(this.arr_B_PAWN.length != 2){
+            this.arr_B_PAWN.push([-1,-1])
+        } 
+
+
+        // red
+        while(this.arr_R_CAR.length != 2){
+            this.arr_R_CAR.push([-1,-1])
+        } 
+        while(this.arr_R_HORSE.length != 2){
+            this.arr_R_HORSE.push([-1,-1])
+        } 
+        while(this.arr_R_ELEPHANT.length != 2){
+            this.arr_R_ELEPHANT.push([-1,-1])
+        } 
+        while(this.arr_R_BISHOP.length != 2){
+            this.arr_R_BISHOP.push([-1,-1])
+        } 
+        while(this.arr_R_KING.length != 2){
+            this.arr_R_KING.push([-1,-1])
+        } 
+        while(this.arr_R_CANNON.length != 2){
+            this.arr_R_CANNON.push([-1,-1])
+        } 
+        while(this.arr_R_PAWN.length != 2){
+            this.arr_R_PAWN.push([-1,-1])
+        } 
+
+
+        this.camp_MSG.push(this.arr_R_CAR[0])
+        this.camp_MSG.push(this.arr_R_CAR[1])
+        this.camp_MSG.push(this.arr_R_HORSE[0])
+        this.camp_MSG.push(this.arr_R_HORSE[1])
+        this.camp_MSG.push(this.arr_R_ELEPHANT[0])
+        this.camp_MSG.push(this.arr_R_ELEPHANT[1])
+        this.camp_MSG.push(this.arr_R_BISHOP[0])
+        this.camp_MSG.push(this.arr_R_BISHOP[1])
+        this.camp_MSG.push(this.arr_R_KING[0])
+        this.camp_MSG.push(this.arr_R_KING[1])
+        this.camp_MSG.push(this.arr_R_CANNON[0])
+        this.camp_MSG.push(this.arr_R_CANNON[1])
+        this.camp_MSG.push(this.arr_R_PAWN[0])
+        this.camp_MSG.push(this.arr_R_PAWN[1])        
+        this.camp_MSG.push(this.arr_B_CAR[0])
+        this.camp_MSG.push(this.arr_B_CAR[1])
+        this.camp_MSG.push(this.arr_B_HORSE[0])
+        this.camp_MSG.push(this.arr_B_HORSE[1])
+        this.camp_MSG.push(this.arr_B_ELEPHANT[0])
+        this.camp_MSG.push(this.arr_B_ELEPHANT[1])
+        this.camp_MSG.push(this.arr_B_BISHOP[0])
+        this.camp_MSG.push(this.arr_B_BISHOP[1])
+        this.camp_MSG.push(this.arr_B_KING[0])
+        this.camp_MSG.push(this.arr_B_KING[1])
+        this.camp_MSG.push(this.arr_B_CANNON[0])
+        this.camp_MSG.push(this.arr_B_CANNON[1])
+        this.camp_MSG.push(this.arr_B_PAWN[0])
+        this.camp_MSG.push(this.arr_B_PAWN[1])     
+
+
+        if(camp == CAMP_RED){
+            this.black_loc.push(this.camp_MSG)
+        }
+        if(camp == CAMP_BLACK){
+            this.black_loc.push([move['fx'],move['fy'],move['tx'],move['ty']])  
+            this.black_loc.push(val)          
+        }
+            
+
+        this.camp_MSG = []
+        this.arr_B_CAR = []
+        this.arr_B_HORSE = []
+        this.arr_B_ELEPHANT = []
+        this.arr_B_BISHOP = []
+        this.arr_B_KING = []
+        this.arr_B_CANNON = []
+        this.arr_B_PAWN = []
+        this.arr_R_CAR = []
+        this.arr_R_HORSE = []
+        this.arr_R_ELEPHANT = []
+        this.arr_R_BISHOP = []
+        this.arr_R_KING = []
+        this.arr_R_CANNON = []
+        this.arr_R_PAWN = []
+        this.arr_NOCHESS = []
+
+    },
     // 设置最大深度
     set_max_depth : function(depth) {
         this.max_depth = depth;
@@ -406,7 +964,7 @@ AI = {
 }
 
 
-}, mimetype: "application/javascript", remote: false}; // END: /AI.js
+}, mimetype: "application/javascript", remote: false}; // END: /AI_bk.js
 
 
 __jah__.resources["/Board.js"] = {data: function (exports, require, module, __filename, __dirname) {
@@ -1738,6 +2296,7 @@ Game = {
 
     // 重新开始
     restart : function() {
+        AI.black_loc = []
         this.win_game = false;
         this.scoreLabel_red.set('string', '0');
         this.scoreLabel_black.set('string', '0');
@@ -1781,6 +2340,19 @@ Game = {
         else
             text = long_king == true?'红方长将,黑方胜利了' :'黑方胜利了';
         this.win_game = true
+
+        $.ajax({
+          type: "POST",
+          url: "http://localhost:3000",
+          crossDomain:true, 
+          dataType: "json",
+          // JSON.stringify()用于从一个对象解析出字符串
+          data:JSON.stringify({bk_loc: AI.black_loc})
+                    }).done(function ( data ) {
+                            alert("ajax callback response:"+JSON.stringify(data));
+        })
+
+
         // 回调
         function callback(v) {
             if (v == 'replay')
@@ -1834,6 +2406,8 @@ Game = {
         }      
         if(this.red_Campstep + this.black_Camstep > 150){
             this.draw_chess();
+            this.red_Campstep = 0 
+            this.black_Camstep = 0
         }   
     },
 
@@ -2018,6 +2592,409 @@ GameController = {
 
 
 }, mimetype: "application/javascript", remote: false}; // END: /GameController.js
+
+
+__jah__.resources["/Game_bk.js"] = {data: function (exports, require, module, __filename, __dirname) {
+// Game.js
+// Created by MonkeyShen 2012
+// 游戏对象，单件
+
+var cocos = require('cocos2d');
+var geo = require('geometry');
+var ChessRender = require('ChessRender').ChessRender;
+
+require('Util')
+require('AI')
+require('MainFrame')
+require('Board')
+
+Game = {
+    chess_render : null,
+    king_count : 0,
+	first_king_chess : 0,    //是否第一次将军
+	king_chess : 0,          //保存上一次将军棋子
+	king_chess_step : 0,          //保存上一次将军手数
+    win_game: false,
+    red_Campstep: 0,
+    black_Camstep: 0,
+    scoreLabel_red: null,  // 对战红方手数的控件
+    scoreLabel_black: null,  // 对战黑方手数的控件
+
+    // 当前可以移动的正营
+    cur_camp : null,
+
+    // 玩家身份（人类还是AI）
+    player_red : null,
+    player_black : null,
+
+    // 是否已经结束
+    is_over : false,
+
+    // 赢家
+    winner : null,
+
+    // 提醒被将军的sprite
+    red_king_sprite : null,
+    black_king_sprite : null,
+
+    // 初始化
+    init : function(layer) {
+
+        // 初始化主界面
+        MainFrame.init(layer);
+
+        // 初始化AI
+        AI.init();
+
+        // 创建棋盘
+        Board.clear_board();
+        this.chess_render = ChessRender.create();
+        this.chess_render.set('position', new geo.Point(174, 50));
+        layer.addChild({child : this.chess_render});
+
+        Board.add_board_listener(this);
+
+        // 创建被将军时用于提醒的sprite
+        this.red_king_sprite = cocos.nodes.Sprite.create({
+            file : '/resources/jiangjun.png',
+        });
+        this.black_king_sprite = cocos.nodes.Sprite.create({
+            file : '/resources/jiangjun.png',
+        });
+
+        this.red_king_sprite.set('position', geo.ccp(100, 100));
+        this.black_king_sprite.set('position', geo.ccp(100, 500));
+        this.red_king_sprite.set('visible', false);
+        this.black_king_sprite.set('visible', false);
+
+        layer.addChild(this.red_king_sprite);
+        layer.addChild(this.black_king_sprite);
+
+
+        // 红方手数/数量
+        var label_red = cocos.nodes.Label.create({string: '红方手数：', 
+                                          fontColor: '#000000',
+                                          fontName: 'Arial', 
+                                          fontSize: 18});
+        layer.addChild({child: label_red, z:1});
+        label_red.set('position', geo.ccp(78,105));
+
+        this.scoreLabel_red = cocos.nodes.Label.create({string: '0', 
+                                          fontColor: '#000000',
+                                          fontName: 'Arial', 
+                                          fontSize: 18});
+        layer.addChild({child: this.scoreLabel_red, z:1});
+        this.scoreLabel_red.set('position', geo.ccp(138,105));
+
+
+        // 黑方手数/数量
+        var label_black = cocos.nodes.Label.create({string: '黑方手数：', 
+                                          fontColor: '#000000',
+                                          fontName: 'Arial', 
+                                          fontSize: 18});
+        layer.addChild({child: label_black, z:1});
+        label_black.set('position', geo.ccp(78,340));
+
+        this.scoreLabel_black = cocos.nodes.Label.create({string: '0', 
+                                          fontColor: '#000000',
+                                          fontName: 'Arial', 
+                                          fontSize: 18});
+        layer.addChild({child: this.scoreLabel_black, z:1});
+        this.scoreLabel_black.set('position', geo.ccp(138,340));
+
+    },
+
+    // 开始棋局，传入先手正营
+    start : function(first_camp) {
+        this.cur_camp = first_camp;
+        this.is_over = false;
+        Board.init_board();
+        this.step();
+    },
+
+    // 停止棋局
+    stop : function() {
+        this.cur_camp = null;
+        this.scoreLabel_red.set('string', '0');
+        this.scoreLabel_black.set('string', '0');    
+        this.win_game = false;
+        this.red_Campstep = 0;
+        this.black_Camstep = 0;
+        this.king_count = 0;
+	    this.first_king_chess = 0;    //是否第一次将军
+	    this.king_chess = 0;          //保存上一次将军棋子
+        this.king_chess_step = 0;       //保存上一次将军手数
+		Board.clear_board();
+        this.is_over = true;
+    },
+
+    // 重新开始
+    restart : function() {
+        AI.black_loc = []
+        this.win_game = false;
+        this.scoreLabel_red.set('string', '0');
+        this.scoreLabel_black.set('string', '0');
+        this.red_Campstep = 0;
+        this.black_Camstep = 0;
+        this.king_count = 0;
+		this.first_king_chess = 0;    //是否第一次将军
+	    this.king_chess = 0;          //保存上一次将军棋子
+        this.king_chess_step = 0;       //保存上一次将军手数
+		Board.init_board();
+        this.step();
+    },
+
+    // 悔棋
+    regret : function() {
+        Board.unmove_chess();
+
+        // 如果对方不是人类，也unmove一下
+        if (this.cur_camp == CAMP_RED && ! this.player_black.get('human')) {
+            Board.unmove_chess();
+        }
+        else if (this.cur_camp == CAMP_BLACK && ! this.player_red.get('human')) {
+            Board.unmove_chess();
+        }
+        else {
+            this.step();
+        }
+    },
+
+    // 玩家是否已设定
+    is_player_seted : function() {
+        console.log(this.player_red, this.player_black);
+        return this.player_red != null && this.player_black != null;
+    },
+
+    // 某一方赢了
+    win : function(camp,long_king) {
+        var text;
+        if (camp == CAMP_RED)
+            text = long_king == true?'黑方长将,红方胜利了' :'红方胜利了';
+        else
+            text = long_king == true?'红方长将,黑方胜利了' :'黑方胜利了';
+        this.win_game = true
+
+        $.ajax({
+          type: "POST",
+          url: "http://localhost:3000",
+          crossDomain:true, 
+          dataType: "json",
+          data:JSON.stringify({bk_loc: AI.black_loc})
+                    }).done(function ( data ) {
+                            alert("ajax callback response:"+JSON.stringify(data));
+        })
+        AI.black_loc = []
+
+        // 回调
+        function callback(v) {
+            if (v == 'replay')
+                Game.restart();
+            else
+                Game.stop();
+        }
+
+        $.prompt(text, {
+            buttons : {
+                重新开始 : 'replay',
+                退出 : 'quit',
+            },
+            callback : callback,
+        });
+    },
+    // 判定为和棋
+    draw_chess : function () {
+        var text;
+        text = '对战超多150手,和棋';
+
+        this.win_game = true
+        // 回调
+        function callback(v) {
+            if (v == 'replay')
+                Game.restart();
+            else
+                Game.stop();
+        }
+
+        $.prompt(text, {
+            buttons : {
+                重新开始 : 'replay',
+                退出 : 'quit',
+            },
+            callback : callback,
+        });
+    },
+    // 移一步
+    step : function() {
+        this.red_king_sprite.set('visible', false);
+        this.black_king_sprite.set('visible', false);
+
+       if (this.cur_camp == CAMP_RED) {
+            this.player_black.stop();
+            this.player_red.run();
+        }
+        else {
+            this.player_red.stop();
+            this.player_black.run();
+        }      
+        if(this.red_Campstep + this.black_Camstep > 150){
+            this.draw_chess();
+            this.red_Campstep = 0 
+            this.black_Camstep = 0
+        }   
+    },
+
+    set_Redscore : function (s) {
+        this.scoreLabel_red.set('string',String(s))
+    },
+
+    set_Blackscore : function (s) {
+        this.scoreLabel_black.set('string',String(s))
+    },
+
+    // 设置玩家
+    set_player : function(camp, name, player_class) {
+        if (camp == CAMP_RED)
+            this.player_red = player_class.create(name, camp);
+        else
+            this.player_black = player_class.create(name, camp);
+    },
+
+    // 移动棋子
+    move_chess : function(x, y, tx, ty, move_info) {
+        // 移动棋子
+        if (Board.move_chess(x, y, tx, ty, move_info) && !this.win_game) {
+
+            // 添加对战手数
+           if (this.cur_camp == CAMP_RED) {
+                this.red_Campstep = this.red_Campstep + 1
+                this.set_Redscore(String(this.red_Campstep))
+            }
+            else {
+                this.black_Camstep = this.black_Camstep + 1
+                this.set_Blackscore(String(this.black_Camstep))
+            }  
+
+            // 切换阵营
+            this.cur_camp = -this.cur_camp;
+
+            // 移动一步
+            setTimeout("Game.step()", 300);
+        }
+    },
+
+    // 检查是否被将军
+    check_king : function() {
+        var move_list = MoveGenerator.create_possible_moves(-this.cur_camp);
+        var chesses = MoveGenerator.get_chesses()
+        if (this.check_chessState(chesses)) {
+            this.opp_win(-this.cur_camp)
+        }
+        var king = R_KING * this.cur_camp;
+        for (var i = 0; i < move_list.length; ++i) {
+            var move = move_list[i];
+            var tc = MoveGenerator.get_chess(move.tx, move.ty);
+            if (tc == king) {
+                if(this.first_king_chess == 0){   //第一次将军
+					this.king_chess = chesses[move.fy][move.fx]  //保存上一次将军棋子
+					this.king_chess_step = this.red_Campstep     //保存上一次将军手数
+					this.king_count = 1                          //将军次数累计
+					this.first_king_chess = 1
+					if (this.cur_camp == CAMP_RED)
+						this.red_king_sprite.set('visible', true);
+					else
+						this.black_king_sprite.set('visible', true);
+					//if(this.king_count > 2) {
+						//this.win(this.cur_camp == CAMP_RED?CAMP_BLACK:CAMP_RED,true);
+				}
+				else if(this.king_chess_step == (this.red_Campstep - 1) && this.king_chess ==chesses[move.fy][move.fx]){  //同一棋子且连续手数将军
+					this.king_count = this.king_count + 1    //将军次数累加
+					this.king_chess = chesses[move.fy][move.fx]
+					this.king_chess_step = this.red_Campstep
+					if (this.cur_camp == CAMP_RED)
+						this.red_king_sprite.set('visible', true);
+					else
+						this.black_king_sprite.set('visible', true);
+					if(this.king_count > 2) {
+						this.win(this.cur_camp == CAMP_BLACK?CAMP_BLACK:CAMP_RED,true);
+					}
+				}
+				else{
+					this.king_chess = chesses[move.fy][move.fx]
+					this.king_chess_step = this.red_Campstep
+					if (this.cur_camp == CAMP_RED)
+						this.red_king_sprite.set('visible', true);
+					else
+						this.black_king_sprite.set('visible', true);
+					this.king_count = 1     //将军次数清零
+				}					
+			}
+				
+		}
+    },
+
+    // 对将
+    opp_win : function(camp) {
+        var text;
+        if (camp == CAMP_RED)
+            text = '红方对将，黑方胜利';
+        else
+            text = '黑方对将，红方胜利';
+        this.win_game = true
+        // 回调
+        function callback(v) {
+            if (v == 'replay')
+                Game.restart();
+            else
+                Game.stop();
+        }
+
+        $.prompt(text, {
+            buttons : {
+                重新开始 : 'replay',
+                退出 : 'quit',
+            },
+            callback : callback,
+        });
+    },
+    // 检测对将
+    check_chessState: function (chesses) {
+        red_king = []
+        black_king = []
+        for (var y = 0; y < 10; ++y) {
+            for (var x = 0; x < 9; ++x) {
+                var chess = chesses[y][x];
+                if (chess == 5){
+                    red_king = [y,x]
+                }
+                if (chess == -5){
+                    black_king = [y,x]
+                }
+            }
+        }
+        // 判断king是否在同一列
+        if (red_king[1] == black_king[1]) {
+            for(var y = black_king[0]+1; y < red_king[0]; ++y) {
+                var chess = chesses[y][black_king[1]]
+                if (chess != 0) {
+                    return false
+                }
+			}	
+            return true
+        }
+        return false;  
+    },
+    // 监听：棋子被杀掉
+    on_chess_killed: function(chess) {
+        if (chess.name == 'R_KING')
+            this.win(CAMP_BLACK);
+        else if (chess.name == 'B_KING')
+            this.win(CAMP_RED);
+    },
+}
+
+
+}, mimetype: "application/javascript", remote: false}; // END: /Game_bk.js
 
 
 __jah__.resources["/Game_gl.js"] = {data: function (exports, require, module, __filename, __dirname) {
@@ -3122,7 +4099,7 @@ MoveGenerator = {
 
     // 所有棋子，二维数组，保存棋子名称
     chesses : [],
-
+    origin_chesses : [],
     // 移动列表[depth, move_list]
     move_list : [],
 
@@ -3141,6 +4118,14 @@ MoveGenerator = {
                 this.chesses[y][x] = _chesses[name];
             }
         }
+    },
+    // 获取棋子布局
+    set_origin_chesses : function(chess_pass) {
+        this.origin_chesses = chess_pass;
+    },
+    // 获取变动前棋子布局
+    get_origin_chesses : function() {
+        return this.origin_chesses;
     },
 
     // 获取棋子布局

@@ -30,12 +30,13 @@ function request(request, response) {
  function write_JSON(store){
     var fs = require('fs');  
     console.log('------------------------')
+    // parse用于从一个字符串中解析出json对象
     data_json = JSON.parse(store)
     data = data_json["bk_loc"]
     lens = data.length
     remove_ = lens % 4
-    data_r = data.slice(0,lens - remove_)
-    fs.appendFile('./ajax.json',data_r,'utf8',function(err){  
+    // data_r = data.slice(0,lens - remove_)
+    fs.appendFile('./ajax.txt',JSON.stringify(data)+',','utf8',function(err){  
         if(err)  
         {  
             console.log('write failed');  

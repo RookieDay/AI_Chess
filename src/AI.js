@@ -1,9 +1,9 @@
 // AI.js
 // Created by MonkeyShen 2012
 // 下棋的AI
+
 require('Evaluater')
-require('Util')
-// var json_file = require('test.json')
+
 var MAX_BOUND = 9999999;
 var MIN_BOUND = -MAX_BOUND;
 
@@ -33,25 +33,6 @@ AI = {
 
     // 历史表，剪枝成功，记录下来，以后排前面，加速剪枝
     history_table : [],
-    // add now to store traninstion
-    arr_B_CAR : [],
-    arr_B_HORSE : [],
-    arr_B_ELEPHANT : [],
-    arr_B_BISHOP : [],
-    arr_B_KING : [],
-    arr_B_CANNON : [],
-    arr_B_PAWN : [],
-    arr_R_CAR : [],
-    arr_R_HORSE : [],
-    arr_R_ELEPHANT : [],
-    arr_R_BISHOP : [],
-    arr_R_KING : [],
-    arr_R_CANNON : [],
-    arr_R_PAWN : [],
-    arr_NOCHESS : [],
-
-    black_loc: [],
-    camp_MSG : [],
 
     // 时间
     start_time : 0,
@@ -63,6 +44,9 @@ AI = {
     chess_hash_keys : [],
     chess_hash_checksums : [],
     chess_hash_items : [{}, {}],
+
+    // 棋盘信息
+    black_loc: [],
 
 
     // 初始化
@@ -79,6 +63,7 @@ AI = {
         this.active_camp = camp;
         this._reset_history_table();
         this._calc_cur_hash_key();
+
         // 如果棋子个数少，增加搜索深度
         var depth_levels = [16, 8, 6, 4]; 
         for (var i = 0; i < depth_levels.length; ++i) {
@@ -87,29 +72,19 @@ AI = {
         }
 
         this.start_time = new Date().getTime();
-
+        
         var val = this._alpha_beta(0, MIN_BOUND, MAX_BOUND);
 
-        // $.ajax({
-        //   type: "POST",
-        //   url: "http://localhost:3000",
-        //   crossDomain:true, 
-        //   dataType: "json",
-        //   data:JSON.stringify({name: "Dennis", address: {city: "Dub", country: "IE"}})
-        //             }).done(function ( data ) {
-        //                     alert("ajax callback response:"+JSON.stringify(data));
-        // })
-        
         this.end_time = new Date().getTime();
 
         // 执行计算出来的走法
         var m = this.best_move;
+
         Game.move_chess(m.fx, m.fy, m.tx, m.ty, {move_action : true});
-        this.store_tranisition(camp,m,val,MoveGenerator.get_chesses())
-
-        // chesses_before = MoveGenerator.get_origin_chesses()
-        // chesses_after = MoveGenerator.get_chesses()
-
+        var cur_chess = MoveGenerator.get_chesses()
+        // var myArray=new Array()
+        // myArray = cur_chess
+        this.store_tranisition(camp,m,val,cur_chess)
         console.log('depth = ', this.max_depth);
         console.log('break time = ', this.break_time);
         console.log('search time = ', this.search_time);
@@ -119,166 +94,26 @@ AI = {
     },
     store_tranisition : function(camp,move,val,chesses_store){
 
-
-        for (var y = 0; y < 10; ++y) {
-            for (var x = 0; x < 9; ++x) {
-                var chess = chesses_store[y][x];
-                if (chess == NOCHESS){
-                    break;
-                }
-
-                // black 
-                if (chess == B_CAR){
-                    this.arr_B_CAR.push([y,x]) 
-                }
-                if (chess == B_HORSE){
-                    this.arr_B_HORSE.push([y,x]) 
-                }
-                if (chess == B_ELEPHANT){
-                    this.arr_B_ELEPHANT.push([y,x]) 
-                }
-                if (chess == B_BISHOP){
-                    this.arr_B_BISHOP.push([y,x]) 
-                }
-                if (chess == B_KING){
-                    this.arr_B_KING.push([y,x]) 
-                }
-                if (chess == B_CANNON){
-                    this.arr_B_CANNON.push([y,x]) 
-                }
-                if (chess == B_PAWN){
-                    this.arr_B_PAWN.push([y,x]) 
-                }
-
-                // red 
-                if (chess == R_CAR){
-                    this.arr_R_CAR.push([y,x]) 
-                }
-                if (chess == R_HORSE){
-                    this.arr_R_HORSE.push([y,x]) 
-                }
-                if (chess == R_ELEPHANT){
-                    this.arr_R_ELEPHANT.push([y,x]) 
-                }
-                if (chess == R_BISHOP){
-                    this.arr_R_BISHOP.push([y,x]) 
-                }
-                if (chess == R_KING){
-                    this.arr_R_KING.push([y,x]) 
-                }
-                if (chess == R_CANNON){
-                    this.arr_R_CANNON.push([y,x]) 
-                }
-                if (chess == B_PAWN){
-                    this.arr_R_PAWN.push([y,x]) 
-                }
-            }
-        }
-
-        while(this.arr_B_CAR.length != 2){
-            this.arr_B_CAR.push([-1,-1])
-        } 
-        while(this.arr_B_HORSE.length != 2){
-            this.arr_B_HORSE.push([-1,-1])
-        } 
-        while(this.arr_B_ELEPHANT.length != 2){
-            this.arr_B_ELEPHANT.push([-1,-1])
-        } 
-        while(this.arr_B_BISHOP.length != 2){
-            this.arr_B_BISHOP.push([-1,-1])
-        } 
-        while(this.arr_B_KING.length != 2){
-            this.arr_B_KING.push([-1,-1])
-        } 
-        while(this.arr_B_CANNON.length != 2){
-            this.arr_B_CANNON.push([-1,-1])
-        } 
-        while(this.arr_B_PAWN.length != 2){
-            this.arr_B_PAWN.push([-1,-1])
-        } 
-
-
-        // red
-        while(this.arr_R_CAR.length != 2){
-            this.arr_R_CAR.push([-1,-1])
-        } 
-        while(this.arr_R_HORSE.length != 2){
-            this.arr_R_HORSE.push([-1,-1])
-        } 
-        while(this.arr_R_ELEPHANT.length != 2){
-            this.arr_R_ELEPHANT.push([-1,-1])
-        } 
-        while(this.arr_R_BISHOP.length != 2){
-            this.arr_R_BISHOP.push([-1,-1])
-        } 
-        while(this.arr_R_KING.length != 2){
-            this.arr_R_KING.push([-1,-1])
-        } 
-        while(this.arr_R_CANNON.length != 2){
-            this.arr_R_CANNON.push([-1,-1])
-        } 
-        while(this.arr_R_PAWN.length != 2){
-            this.arr_R_PAWN.push([-1,-1])
-        } 
-
-
-        this.camp_MSG.push(this.arr_R_CAR[0])
-        this.camp_MSG.push(this.arr_R_CAR[1])
-        this.camp_MSG.push(this.arr_R_HORSE[0])
-        this.camp_MSG.push(this.arr_R_HORSE[1])
-        this.camp_MSG.push(this.arr_R_ELEPHANT[0])
-        this.camp_MSG.push(this.arr_R_ELEPHANT[1])
-        this.camp_MSG.push(this.arr_R_BISHOP[0])
-        this.camp_MSG.push(this.arr_R_BISHOP[1])
-        this.camp_MSG.push(this.arr_R_KING[0])
-        this.camp_MSG.push(this.arr_R_KING[1])
-        this.camp_MSG.push(this.arr_R_CANNON[0])
-        this.camp_MSG.push(this.arr_R_CANNON[1])
-        this.camp_MSG.push(this.arr_R_PAWN[0])
-        this.camp_MSG.push(this.arr_R_PAWN[1])        
-        this.camp_MSG.push(this.arr_B_CAR[0])
-        this.camp_MSG.push(this.arr_B_CAR[1])
-        this.camp_MSG.push(this.arr_B_HORSE[0])
-        this.camp_MSG.push(this.arr_B_HORSE[1])
-        this.camp_MSG.push(this.arr_B_ELEPHANT[0])
-        this.camp_MSG.push(this.arr_B_ELEPHANT[1])
-        this.camp_MSG.push(this.arr_B_BISHOP[0])
-        this.camp_MSG.push(this.arr_B_BISHOP[1])
-        this.camp_MSG.push(this.arr_B_KING[0])
-        this.camp_MSG.push(this.arr_B_KING[1])
-        this.camp_MSG.push(this.arr_B_CANNON[0])
-        this.camp_MSG.push(this.arr_B_CANNON[1])
-        this.camp_MSG.push(this.arr_B_PAWN[0])
-        this.camp_MSG.push(this.arr_B_PAWN[1])     
-
-
         if(camp == CAMP_RED){
-            this.black_loc.push(this.camp_MSG)
+            var arr = []
+            for (var y = 0; y < 10; ++y) {
+                var s = []
+                for (var x = 0; x < 9; ++x) {
+                    s.push(chesses_store[y][x]);
+                }
+                arr[y] = s
+            }
+            // arr.push(chesses_store)
+            // this.black_loc.push([chesses_store[0],chesses_store[1],chesses_store[2],chesses_store[3],chesses_store[4],chesses_store[5],chesses_store[6],chesses_store[7],chesses_store[8],chesses_store[9]])
+            this.black_loc.push(arr);
         }
         if(camp == CAMP_BLACK){
-            this.black_loc.push([move['fx'],move['fy'],move['tx'],move['ty']])  
-            this.black_loc.push(val)          
+            this.black_loc.push([move['fx'],move['fy'],move['tx'],move['ty']]) ;
+            this.black_loc.push(val)          ;
         }
-            
-
-        this.camp_MSG = []
-        this.arr_B_CAR = []
-        this.arr_B_HORSE = []
-        this.arr_B_ELEPHANT = []
-        this.arr_B_BISHOP = []
-        this.arr_B_KING = []
-        this.arr_B_CANNON = []
-        this.arr_B_PAWN = []
-        this.arr_R_CAR = []
-        this.arr_R_HORSE = []
-        this.arr_R_ELEPHANT = []
-        this.arr_R_BISHOP = []
-        this.arr_R_KING = []
-        this.arr_R_CANNON = []
-        this.arr_R_PAWN = []
-        this.arr_NOCHESS = []
 
     },
+
     // 设置最大深度
     set_max_depth : function(depth) {
         this.max_depth = depth;
@@ -456,7 +291,7 @@ AI = {
             flag = 1;
         else
             flag = -1;
-                    // -1
+
         camp = this.active_camp * flag;
 
         // 查找hash表，直接获取估值
@@ -559,4 +394,3 @@ AI = {
         return alpha;
     }
 }
-
