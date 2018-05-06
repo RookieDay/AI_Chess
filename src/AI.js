@@ -77,6 +77,16 @@ AI = {
 
         this.end_time = new Date().getTime();
 
+        var save_chess = MoveGenerator.get_chesses()
+        var bf_chess = []
+        for (var y = 0; y < 10; ++y) {
+            var s = []
+            for (var x = 0; x < 9; ++x) {
+                s.push(save_chess[y][x]);
+            }
+            bf_chess[y] = s
+        }
+
         // 执行计算出来的走法
         var m = this.best_move;
 
@@ -84,7 +94,8 @@ AI = {
         var cur_chess = MoveGenerator.get_chesses()
         // var myArray=new Array()
         // myArray = cur_chess
-        this.store_tranisition(camp,m,val,cur_chess)
+        // this.store_tranisition(camp,m,val,bf_chess,cur_chess)
+        this.store_tranisition_bk(camp,m,val,bf_chess,cur_chess)
         console.log('depth = ', this.max_depth);
         console.log('break time = ', this.break_time);
         console.log('search time = ', this.search_time);
@@ -92,24 +103,66 @@ AI = {
         console.log('score = ', val);
         console.log('time = ', (this.end_time - this.start_time) / 1000);
     },
-    store_tranisition : function(camp,move,val,chesses_store){
+
+    store_tranisition : function(camp,move,val,bf_chess,chesses_store){
+
+
+        // var arr = []
+        // for (var y = 0; y < 10; ++y) {
+        //     var s = []
+        //     for (var x = 0; x < 9; ++x) {
+        //         s.push(chesses_store[y][x]);
+        //     }
+        //     arr[y] = s
+        // }
+
+        var arr1 = []
+        var arr2 = []
+        for (var y = 0; y < 10; ++y) {
+            // var s = []
+            for (var x = 0; x < 9; ++x) {
+                arr1.push(bf_chess[y][x]);
+                arr2.push(chesses_store[y][x]);
+            }
+            // arr[y] = s
+        }
+
+        this.black_loc.push(arr1);
+
+        this.black_loc.push([move['fx'],move['fy'],move['tx'],move['ty']]) ;
+        this.black_loc.push(val)  
+        this.black_loc.push(arr2)        ;
+
+
+    },
+
+
+    store_tranisition_bk : function(camp,move,val,chesses_store){
 
         if(camp == CAMP_RED){
+            // var arr = []
+            // for (var y = 0; y < 10; ++y) {
+            //     var s = []
+            //     for (var x = 0; x < 9; ++x) {
+            //         s.push(chesses_store[y][x]);
+            //     }
+            //     arr[y] = s
+            // }
+
             var arr = []
             for (var y = 0; y < 10; ++y) {
-                var s = []
+                // var s = []
                 for (var x = 0; x < 9; ++x) {
-                    s.push(chesses_store[y][x]);
+                    arr.push(chesses_store[y][x]);
                 }
-                arr[y] = s
+                // arr[y] = s
             }
-            // arr.push(chesses_store)
-            // this.black_loc.push([chesses_store[0],chesses_store[1],chesses_store[2],chesses_store[3],chesses_store[4],chesses_store[5],chesses_store[6],chesses_store[7],chesses_store[8],chesses_store[9]])
-            this.black_loc.push(arr);
+
+           this.black_loc.push(arr);
         }
         if(camp == CAMP_BLACK){
             this.black_loc.push([move['fx'],move['fy'],move['tx'],move['ty']]) ;
-            this.black_loc.push(val)          ;
+            this.black_loc.push(val) ;
         }
 
     },
