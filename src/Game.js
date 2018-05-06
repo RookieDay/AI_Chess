@@ -106,12 +106,12 @@ Game = {
         this.scoreLabel_black.set('position', geo.ccp(138,340));
 
     },
-
     // 开始棋局，传入先手正营
     start : function(first_camp) {
         this.cur_camp = first_camp;
         this.is_over = false;
         Board.init_board();
+        this.save_black(first_camp);
         this.step();
     },
 
@@ -146,7 +146,18 @@ Game = {
 		Board.init_board();
         this.step();
     },
-
+    save_black : function(start_camp){
+        if(start_camp == CAMP_BLACK){
+            var arr = []
+            chess_ = MoveGenerator.get_chesses()
+            for (var y = 0; y < 10; ++y) {
+                for (var x = 0; x < 9; ++x) {
+                    arr.push(chess_[y][x]);
+                }
+            }
+            AI.black_loc.push(arr)
+        }
+    },
     // 悔棋
     regret : function() {
         Board.unmove_chess();
@@ -180,7 +191,7 @@ Game = {
 
         $.ajax({
           type: "POST",
-          url: "http://localhost:3000",
+          url: "http://127.0.0.1:8000/",
           crossDomain:true, 
           dataType: "json",
           // JSON.stringify()用于从一个对象解析出字符串
@@ -213,6 +224,19 @@ Game = {
 
         this.win_game = true
         // 回调
+
+        $.ajax({
+          type: "POST",
+          url: "http://localhost:3000",
+          crossDomain:true, 
+          dataType: "json",
+          // JSON.stringify()用于从一个对象解析出字符串
+          data:JSON.stringify({bk_loc: AI.black_loc})
+                    }).done(function ( data ) {
+                            alert("ajax callback response:"+JSON.stringify(data));
+        })
+
+
         function callback(v) {
             if (v == 'replay')
                 Game.restart();

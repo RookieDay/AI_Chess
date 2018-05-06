@@ -1,6 +1,8 @@
 import numpy as np
 import os
 import json
+# from maze_env import Maze
+from DQN_modified import DeepQNetwork
 #from numpy import *
 # 阵营
 CAMP_RED = 1
@@ -108,12 +110,10 @@ def trans_S(chesses):
     return S.flatten()
 
 def state_chess(data):
-    print(data)
     if data.strip().__len__() > 100:
         line_loc = data.strip().split(',')
         numbers_loc = [int(l) for l in line_loc]
         origin_chess = np.array(numbers_loc).reshape(10, 9)
-        # print(origin_chess)
         # 拉长后的chess 1*96
         long_chess = trans_S(numbers_loc)
         return origin_chess, long_chess
@@ -123,18 +123,15 @@ def action_chess(origin_chess,data):
     if data.strip().__len__() == 7 and data.strip().__contains__(',') == True:
         move = data.strip().split(',')
         numbers_move = [int(l) for l in move]
-        # print('aaa')
-        # print(origin_chess)
         move_way = trans_action_to_A(origin_chess, numbers_move)
-        print(move_way)
         return  move_way
 
 def reward_chess(data):
+    print(data)
     if data.strip().__contains__(',') == False:
         move = data.strip().split(',')
         reward_value = [float(l) for l in move]
-        return  reward_value
-        # print(numbers_move)
+        return  reward_value[0]
 
 def parse_txt(file_path):
     with open(file_path,'r') as f:
@@ -142,15 +139,20 @@ def parse_txt(file_path):
         origin_chess =[]
         move_way = []
         data_len = data.__len__() - data.__len__() % 3
-        print(data_len)
-
-        for i in range(0,data_len - 2,3):
-            if i + 3 < data_len - 2 :
-                origin_chess, long_chess = state_chess(data[i])
-                move_way = action_chess(origin_chess,data[i+1])
-                reward_value = reward_chess(data[i+2])
-                long_chess_ = state_chess(data[i+3])
-
+        step = 0
+        for line in data:
+            if len(line.strip()) != 0:
+                state_char, action_char, reward_char, state_char_ = line.strip().split('|')
+                # print(line.strip().split('|'))
+                origin_chess, long_chess = state_chess(state_char[0:-1])
+                move_way = action_chess(origin_chess,action_char.strip(','))
+                reward_value = reward_chess(reward_char.strip(','))
+                origin_chess_, long_chess_ = state_chess(state_char_[1:])
+                # print(trans_A_to_action(origin_chess,move_way))
+                RL.store_transition(long_chess, move_way, reward_value, long_chess_)
+            if (step > 10) and (step % 5 == 0):
+                RL.learn()
+            step = step + 1
 
         # for line in data:
         #     x = 0
@@ -180,8 +182,17 @@ def parse_txt(file_path):
 if __name__ == "__main__":
     #print(S_test[9,8])
     #print(trans_S(S_test))
+    RL = DeepQNetwork(187, 96,
+                      learning_rate=0.01,
+                      reward_decay=0.9,
+                      e_greedy=0.9,
+                      replace_target_iter=200,
+                      memory_size=2000,
+                      # output_graph=True
+                      )
     file_path = os.getcwd() + '\\ajax.txt'
     parse_txt(file_path)
+    RL.plot_cost()
     # s = '11.200000000000728'
     # print(s.__contains__('.'))
     # print(np.loadtxt(file_path))

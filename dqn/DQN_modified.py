@@ -58,6 +58,8 @@ class DeepQNetwork:
             tf.summary.FileWriter("logs/", self.sess.graph)
 
         self.sess.run(tf.global_variables_initializer())
+        self.saver = tf.train.Saver()
+        self.saver.save(self.sess, './model/model.ckpt', global_step=1)
         self.cost_his = []
 
     def _build_net(self):
@@ -73,14 +75,18 @@ class DeepQNetwork:
         with tf.variable_scope('eval_net'):
             e1 = tf.layers.dense(self.s, 20, tf.nn.relu, kernel_initializer=w_initializer,
                                  bias_initializer=b_initializer, name='e1')
-            self.q_eval = tf.layers.dense(e1, self.n_actions, kernel_initializer=w_initializer,
+            e2 = tf.layers.dense(e1, 20, tf.nn.relu, kernel_initializer=w_initializer,
+                                 bias_initializer=b_initializer, name='e2')
+            self.q_eval = tf.layers.dense(e2, self.n_actions, kernel_initializer=w_initializer,
                                           bias_initializer=b_initializer, name='q')
 
         # ------------------ build target_net ------------------
         with tf.variable_scope('target_net'):
             t1 = tf.layers.dense(self.s_, 20, tf.nn.relu, kernel_initializer=w_initializer,
                                  bias_initializer=b_initializer, name='t1')
-            self.q_next = tf.layers.dense(t1, self.n_actions, kernel_initializer=w_initializer,
+            tx = tf.layers.dense(t1, 20, tf.nn.relu, kernel_initializer=w_initializer,
+                                 bias_initializer=b_initializer, name='tx')
+            self.q_next = tf.layers.dense(tx, self.n_actions, kernel_initializer=w_initializer,
                                           bias_initializer=b_initializer, name='t2')
 
         with tf.variable_scope('q_target'):
@@ -116,6 +122,7 @@ class DeepQNetwork:
         return action
 
     def learn(self):
+        self.saver.restore(self.sess, './model/model.ckpt' + '-'+ str(1))
         # check to replace target parameters
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.sess.run(self.target_replace_op)
