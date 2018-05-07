@@ -189,17 +189,32 @@ Game = {
             text = long_king == true?'红方长将,黑方胜利了' :'黑方胜利了';
         this.win_game = true
 
+        // $.ajax({
+        //   type: "POST",
+        //   url: "http://127.0.0.1:8000/",
+        //   crossDomain:true, 
+        //   dataType: "json",
+        //   // JSON.stringify()用于从一个对象解析出字符串
+        //   data:JSON.stringify({bk_loc: AI.black_loc})
+        //             }).done(function ( data ) {
+        //                     alert('hahah'+data);
+        // })
+
         $.ajax({
           type: "POST",
           url: "http://127.0.0.1:8000/",
           crossDomain:true, 
           dataType: "json",
           // JSON.stringify()用于从一个对象解析出字符串
-          data:JSON.stringify({bk_loc: AI.black_loc})
-                    }).done(function ( data ) {
-                            alert("ajax callback response:"+JSON.stringify(data));
+          data:JSON.stringify({bk_loc: AI.black_loc}),
+          success:function(data) { 
+                if(data.msg =="true" ){ 
+                    console.log("修改成功！"); 
+                }else{ 
+                    console.log("修改失败！"); 
+                } 
+         }
         })
-
 
         // 回调
         function callback(v) {
@@ -227,7 +242,7 @@ Game = {
 
         $.ajax({
           type: "POST",
-          url: "http://localhost:3000",
+          url: "http://127.0.0.1:8000",
           crossDomain:true, 
           dataType: "json",
           // JSON.stringify()用于从一个对象解析出字符串
@@ -236,7 +251,31 @@ Game = {
                             alert("ajax callback response:"+JSON.stringify(data));
         })
 
-
+        
+        $.ajax({
+          type: "POST",
+          url: "http://127.0.0.1:8000/",
+          crossDomain:true, 
+          dataType: "json",
+          // JSON.stringify()用于从一个对象解析出字符串
+          data:JSON.stringify({bk_loc: AI.black_loc}),
+          success:function(data) { 
+                $.ajax({
+                  type: "POST",
+                  url: "http://127.0.0.1:8000",
+                  crossDomain:true, 
+                  success:function(data){
+                    ....
+                  },
+                  error:function(){
+                    ...
+                  }
+                })
+         },
+         error:function(){
+            console.log('error')
+         }
+        })
         function callback(v) {
             if (v == 'replay')
                 Game.restart();

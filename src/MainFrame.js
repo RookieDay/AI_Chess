@@ -76,6 +76,7 @@ MainFrame = {
             var playerEasy = require('player/PlayerAIEasy').player;
             var playerNormal = require('player/PlayerAINormal').player;
             var playerHard = require('player/PlayerAIHard').player;
+            var playerDQN = require('player/PlayerDQN').player;
 
             // 选择先后手回调
             function on_select_first(v,m,f){
@@ -101,9 +102,10 @@ MainFrame = {
                 $.prompt('请设定黑方玩家', {
                     buttons : {
                         人类 : playerHuman,
-                        简单AI : playerEasy,
-                        普通AI : playerNormal,
-                        困难AI : playerHard
+                        // 简单AI : playerEasy,
+                        // 普通AI : playerNormal,
+                        AI : playerHard,
+                        Deep : playerDQN
                     },
                     callback : on_select_black_player,
                 });
@@ -112,9 +114,11 @@ MainFrame = {
             $.prompt('请设定红方玩家', {
                 buttons : {
                     人类 : playerHuman,
-                    简单AI : playerEasy,
-                    普通AI : playerNormal,
-                    困难AI : playerHard
+                    // 简单AI : playerEasy,
+                    // 普通AI : playerNormal,
+                    AI : playerHard,
+                    // Deep: playerEasy,
+
                 },
                 callback : on_select_red_player,
             });
