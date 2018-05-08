@@ -240,6 +240,17 @@ Game = {
         this.win_game = true
         // 回调
 
+        // $.ajax({
+        //   type: "POST",
+        //   url: "http://127.0.0.1:8000",
+        //   crossDomain:true, 
+        //   dataType: "json",
+        //   // JSON.stringify()用于从一个对象解析出字符串
+        //   data:JSON.stringify({bk_loc: AI.black_loc})
+        //             }).done(function ( data ) {
+        //                     alert("ajax callback response:"+JSON.stringify(data));
+        // })
+
         $.ajax({
           type: "POST",
           url: "http://127.0.0.1:8000",
@@ -248,34 +259,11 @@ Game = {
           // JSON.stringify()用于从一个对象解析出字符串
           data:JSON.stringify({bk_loc: AI.black_loc})
                     }).done(function ( data ) {
-                            alert("ajax callback response:"+JSON.stringify(data));
-        })
+                            alert("ajax callback response:" + data);
+        }).fail(function(){alert('error')})
 
         
-        $.ajax({
-          type: "POST",
-          url: "http://127.0.0.1:8000/",
-          crossDomain:true, 
-          dataType: "json",
-          // JSON.stringify()用于从一个对象解析出字符串
-          data:JSON.stringify({bk_loc: AI.black_loc}),
-          success:function(data) { 
-                $.ajax({
-                  type: "POST",
-                  url: "http://127.0.0.1:8000",
-                  crossDomain:true, 
-                  success:function(data){
-                    ....
-                  },
-                  error:function(){
-                    ...
-                  }
-                })
-         },
-         error:function(){
-            console.log('error')
-         }
-        })
+
         function callback(v) {
             if (v == 'replay')
                 Game.restart();

@@ -6,7 +6,7 @@ class testHTTPServer_RequestHandler(SimpleHTTPRequestHandler):
     def _set_headers(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin","*")
-        self.send_header('Content-type', 'text/html')
+        self.send_header('Content-type', 'application/json')
         self.end_headers()
     
     def do_POST(self):
@@ -15,13 +15,18 @@ class testHTTPServer_RequestHandler(SimpleHTTPRequestHandler):
         print(self.headers['content-type'])
         self.data_string = self.rfile.read(int(self.headers['Content-Length']))
         self.send_response(200)
-        self.end_headers()
+        self.end_headers()  
 
+        print('-'*400)
+        print(self.data_string)
+        print('\n')
+        print('-'*400)
         data = json.loads(self.data_string)
         print(data)
 
-        ds = bytes('1,1,1,1','utf-8')
-        self.wfile.write(ds)
+        js_da = {"ana":"11"}
+        js_du = json.dumps(js_da)
+        self.wfile.write(js_du.encode())
 
 
 def run():
