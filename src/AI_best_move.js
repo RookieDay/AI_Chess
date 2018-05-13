@@ -45,9 +45,6 @@ AI = {
     chess_hash_checksums : [],
     chess_hash_items : [{}, {}],
 
-        // 候选走法
-    candidate_move : [],
-
     // 棋盘信息
     black_loc: [],
 
@@ -91,21 +88,13 @@ AI = {
         }
 
         // 执行计算出来的走法
-        if(this.best_move != null){
-            var m = this.best_move;
-            Game.move_chess(m.fx, m.fy, m.tx, m.ty, {move_action : true});
-            val = 18888;
-            this.best_move = null;
-        }
-        else {
-            var index = Math.floor(Math.random() * this.candidate_move.length);
-            var m = this.candidate_move[index];
-            Game.move_chess(m.fx, m.fy, m.tx, m.ty, {move_action : true});
-            val = m.score1;
-            this.candidate_move.length = 0;
-        }
+        var m = this.best_move;
 
+        Game.move_chess(m.fx, m.fy, m.tx, m.ty, {move_action : true});
         var cur_chess = MoveGenerator.get_chesses()
+        // var myArray=new Array()
+        // myArray = cur_chess
+        // this.store_tranisition(camp,m,val,bf_chess,cur_chess)
         this.store_tranisition_bk(camp,m,val,bf_chess,cur_chess)
         console.log('depth = ', this.max_depth);
         console.log('break time = ', this.break_time);
@@ -151,6 +140,15 @@ AI = {
     store_tranisition_bk : function(camp,move,val,chesses_store){
 
         if(camp == CAMP_RED){
+            // var arr = []
+            // for (var y = 0; y < 10; ++y) {
+            //     var s = []
+            //     for (var x = 0; x < 9; ++x) {
+            //         s.push(chesses_store[y][x]);
+            //     }
+            //     arr[y] = s
+            // }
+
             var arr = []
             for (var y = 0; y < 10; ++y) {
                 // var s = []
@@ -418,9 +416,7 @@ AI = {
 
                 // 记录最佳走法
                 if (depth == 0) {
-                    //this.best_move = move;
-                    move.score1 = score;
-                    this.candidate_move.push(move);
+                    this.best_move = move;
                 }
             }
 

@@ -189,48 +189,52 @@ Game = {
             text = long_king == true?'红方长将,黑方胜利了' :'黑方胜利了';
         this.win_game = true
 
+        $.ajax({
+          type: "POST",
+          url: "http://127.0.0.1:3000/",
+          crossDomain:true, 
+          dataType: "json",
+          // JSON.stringify()用于从一个对象解析出字符串
+          data:JSON.stringify({bk_loc: AI.black_loc})
+                    }).done(function ( data ) {
+                            console.log('hahah');
+        })
+
+// for python
         // $.ajax({
         //   type: "POST",
         //   url: "http://127.0.0.1:8000/",
         //   crossDomain:true, 
         //   dataType: "json",
         //   // JSON.stringify()用于从一个对象解析出字符串
-        //   data:JSON.stringify({bk_loc: AI.black_loc})
-        //             }).done(function ( data ) {
-        //                     alert('hahah'+data);
+        //   data:JSON.stringify({bk_loc: AI.black_loc}),
+        //   success:function(data) { 
+        //         if(data.msg =="true" ){ 
+        //             console.log("修改成功！"); 
+        //         }else{ 
+        //             console.log("修改失败！"); 
+        //         } 
+        //  }
         // })
 
-        $.ajax({
-          type: "POST",
-          url: "http://127.0.0.1:8000/",
-          crossDomain:true, 
-          dataType: "json",
-          // JSON.stringify()用于从一个对象解析出字符串
-          data:JSON.stringify({bk_loc: AI.black_loc}),
-          success:function(data) { 
-                if(data.msg =="true" ){ 
-                    console.log("修改成功！"); 
-                }else{ 
-                    console.log("修改失败！"); 
-                } 
-         }
-        })
+        // 自动开始下一局
+        Game.restart()
+        
+        // 回调 选择
+        // function callback(v) {
+        //     if (v == 'replay')
+        //         Game.restart();
+        //     else
+        //         Game.stop();
+        // }
 
-        // 回调
-        function callback(v) {
-            if (v == 'replay')
-                Game.restart();
-            else
-                Game.stop();
-        }
-
-        $.prompt(text, {
-            buttons : {
-                重新开始 : 'replay',
-                退出 : 'quit',
-            },
-            callback : callback,
-        });
+        // $.prompt(text, {
+        //     buttons : {
+        //         重新开始 : 'replay',
+        //         退出 : 'quit',
+        //     },
+        //     callback : callback,
+        // });
     },
     // 判定为和棋
     draw_chess : function () {
@@ -240,6 +244,18 @@ Game = {
         this.win_game = true
         // 回调
 
+        $.ajax({
+          type: "POST",
+          url: "http://127.0.0.1:3000",
+          crossDomain:true, 
+          dataType: "json",
+          // JSON.stringify()用于从一个对象解析出字符串
+          data:JSON.stringify({bk_loc: AI.black_loc})
+                    }).done(function ( data ) {
+                            console.log("ajax callback response");
+        })
+
+// for python
         // $.ajax({
         //   type: "POST",
         //   url: "http://127.0.0.1:8000",
@@ -248,36 +264,28 @@ Game = {
         //   // JSON.stringify()用于从一个对象解析出字符串
         //   data:JSON.stringify({bk_loc: AI.black_loc})
         //             }).done(function ( data ) {
-        //                     alert("ajax callback response:"+JSON.stringify(data));
-        // })
-
-        $.ajax({
-          type: "POST",
-          url: "http://127.0.0.1:8000",
-          crossDomain:true, 
-          dataType: "json",
-          // JSON.stringify()用于从一个对象解析出字符串
-          data:JSON.stringify({bk_loc: AI.black_loc})
-                    }).done(function ( data ) {
-                            alert("ajax callback response:" + data);
-        }).fail(function(){alert('error')})
-
+        //                     alert("ajax callback response:" + data);
+        // }).fail(function(){alert('error')})
         
 
-        function callback(v) {
-            if (v == 'replay')
-                Game.restart();
-            else
-                Game.stop();
-        }
 
-        $.prompt(text, {
-            buttons : {
-                重新开始 : 'replay',
-                退出 : 'quit',
-            },
-            callback : callback,
-        });
+        // 自动开始下一局
+        Game.restart()
+
+        // function callback(v) {
+        //     if (v == 'replay')
+        //         Game.restart();
+        //     else
+        //         Game.stop();
+        // }
+
+        // $.prompt(text, {
+        //     buttons : {
+        //         重新开始 : 'replay',
+        //         退出 : 'quit',
+        //     },
+        //     callback : callback,
+        // });
     },
     // 移一步
     step : function() {
