@@ -56,9 +56,8 @@ AI = {
     init : function() {
         this._init_hash_key();
     },
-
-    // 下一步棋
-    play_a_chess : function(camp) {
+    // 下一步棋 for DQN
+    play_DQN_chess : function(camp) {
         this.best_move = null;
         this.break_time = 0;
         this.search_time = 0;
@@ -113,6 +112,28 @@ AI = {
         console.log('hash hit time = ', this.hash_hit_time);
         console.log('score = ', val);
         console.log('time = ', (this.end_time - this.start_time) / 1000);
+    },
+    // 下一步棋
+    play_a_chess : function(camp) {
+        
+        var save_chess = MoveGenerator.get_chesses()
+        var arr = []
+        for (var y = 0; y < 10; ++y) {
+            for (var x = 0; x < 9; ++x) {
+                arr.push(save_chess[y][x]);
+            }
+        }
+        
+        $.ajax({
+          type: "POST",
+          url: "http://127.0.0.1:8000",
+          crossDomain:true, 
+          dataType: "json",
+          // JSON.stringify()用于从一个对象解析出字符串
+          data:JSON.stringify({chess_state: arr})
+                    }).done(function ( data ) {
+                            alert("ajax callback response:" + data);
+        }).fail(function(){alert('error')})      
     },
 
     store_tranisition : function(camp,move,val,bf_chess,chesses_store){

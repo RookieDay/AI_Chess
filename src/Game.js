@@ -179,6 +179,43 @@ Game = {
         console.log(this.player_red, this.player_black);
         return this.player_red != null && this.player_black != null;
     },
+ // 对将
+    opp_win : function(camp) {
+        var text;
+        if (camp == CAMP_RED)
+            text = '红方对将，黑方胜利';
+        else
+            text = '黑方对将，红方胜利';
+        this.win_game = true
+
+        $.ajax({
+          type: "POST",
+          url: "http://127.0.0.1:8000",
+          crossDomain:true, 
+          dataType: "json",
+          // JSON.stringify()用于从一个对象解析出字符串
+          data:JSON.stringify({bk_loc: AI.black_loc})
+                    }).done(function ( data ) {
+                            alert("ajax callback response:" + data);
+        }).fail(function(){alert('error')})
+                    
+
+        // 回调
+        function callback(v) {
+            if (v == 'replay')
+                Game.restart();
+            else
+                Game.stop();
+        }
+
+        $.prompt(text, {
+            buttons : {
+                重新开始 : 'replay',
+                退出 : 'quit',
+            },
+            callback : callback,
+        });
+    },
 
     // 某一方赢了
     win : function(camp,long_king) {
@@ -189,16 +226,16 @@ Game = {
             text = long_king == true?'红方长将,黑方胜利了' :'黑方胜利了';
         this.win_game = true
 
-        $.ajax({
-          type: "POST",
-          url: "http://127.0.0.1:3000/",
-          crossDomain:true, 
-          dataType: "json",
-          // JSON.stringify()用于从一个对象解析出字符串
-          data:JSON.stringify({bk_loc: AI.black_loc})
-                    }).done(function ( data ) {
-                            console.log('hahah');
-        })
+        // $.ajax({
+        //   type: "POST",
+        //   url: "http://127.0.0.1:3000/",
+        //   crossDomain:true, 
+        //   dataType: "json",
+        //   // JSON.stringify()用于从一个对象解析出字符串
+        //   data:JSON.stringify({bk_loc: AI.black_loc})
+        //             }).done(function ( data ) {
+        //                     console.log('hahah');
+        // })
 
 // for python
         // $.ajax({
@@ -216,25 +253,36 @@ Game = {
         //         } 
         //  }
         // })
+        $.ajax({
+          type: "POST",
+          url: "http://127.0.0.1:8000",
+          crossDomain:true, 
+          dataType: "json",
+          // JSON.stringify()用于从一个对象解析出字符串
+          data:JSON.stringify({bk_loc: AI.black_loc})
+                    }).done(function ( data ) {
+                            alert("ajax callback response:" + data);
+        }).fail(function(){alert('error')})
+
 
         // 自动开始下一局
-        Game.restart()
+        // Game.restart()
         
         // 回调 选择
-        // function callback(v) {
-        //     if (v == 'replay')
-        //         Game.restart();
-        //     else
-        //         Game.stop();
-        // }
+        function callback(v) {
+            if (v == 'replay')
+                Game.restart();
+            else
+                Game.stop();
+        }
 
-        // $.prompt(text, {
-        //     buttons : {
-        //         重新开始 : 'replay',
-        //         退出 : 'quit',
-        //     },
-        //     callback : callback,
-        // });
+        $.prompt(text, {
+            buttons : {
+                重新开始 : 'replay',
+                退出 : 'quit',
+            },
+            callback : callback,
+        });
     },
     // 判定为和棋
     draw_chess : function () {
@@ -396,30 +444,6 @@ Game = {
 		}
     },
 
-    // 对将
-    opp_win : function(camp) {
-        var text;
-        if (camp == CAMP_RED)
-            text = '红方对将，黑方胜利';
-        else
-            text = '黑方对将，红方胜利';
-        this.win_game = true
-        // 回调
-        function callback(v) {
-            if (v == 'replay')
-                Game.restart();
-            else
-                Game.stop();
-        }
-
-        $.prompt(text, {
-            buttons : {
-                重新开始 : 'replay',
-                退出 : 'quit',
-            },
-            callback : callback,
-        });
-    },
     // 检测对将
     check_chessState: function (chesses) {
         red_king = []
