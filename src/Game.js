@@ -196,9 +196,24 @@ Game = {
           // JSON.stringify()用于从一个对象解析出字符串
           data:JSON.stringify({bk_loc: AI.black_loc})
                     }).done(function ( data ) {
-                            alert("ajax callback response:" + data);
-        }).fail(function(){alert('error')})
-                    
+                            console.log("ajax callback response:" + data);
+        }).fail(function(){console.log('error')})            
+
+        // $.ajax({
+        //   type: "POST",
+        //   url: "http://127.0.0.1:8000/",
+        //   crossDomain:true, 
+        //   dataType: "json",
+        //   // JSON.stringify()用于从一个对象解析出字符串
+        //   data:JSON.stringify({bk_loc: AI.black_loc}),
+        //   success:function(data) { 
+        //         if(data.msg =="true" ){ 
+        //             console.log("修改成功！"); 
+        //         }else{ 
+        //             console.log("修改失败！"); 
+        //         } 
+        //  }
+        // })
 
         // 回调
         function callback(v) {
@@ -253,6 +268,7 @@ Game = {
         //         } 
         //  }
         // })
+        // ok as below
         $.ajax({
           type: "POST",
           url: "http://127.0.0.1:8000",
@@ -261,8 +277,8 @@ Game = {
           // JSON.stringify()用于从一个对象解析出字符串
           data:JSON.stringify({bk_loc: AI.black_loc})
                     }).done(function ( data ) {
-                            alert("ajax callback response:" + data);
-        }).fail(function(){alert('error')})
+                            console.log("ajax callback response:" + data);
+        }).fail(function(){console.log('error')})
 
 
         // 自动开始下一局
@@ -292,48 +308,46 @@ Game = {
         this.win_game = true
         // 回调
 
-        $.ajax({
-          type: "POST",
-          url: "http://127.0.0.1:3000",
-          crossDomain:true, 
-          dataType: "json",
-          // JSON.stringify()用于从一个对象解析出字符串
-          data:JSON.stringify({bk_loc: AI.black_loc})
-                    }).done(function ( data ) {
-                            console.log("ajax callback response");
-        })
-
-// for python
         // $.ajax({
         //   type: "POST",
-        //   url: "http://127.0.0.1:8000",
+        //   url: "http://127.0.0.1:3000",
         //   crossDomain:true, 
         //   dataType: "json",
         //   // JSON.stringify()用于从一个对象解析出字符串
         //   data:JSON.stringify({bk_loc: AI.black_loc})
         //             }).done(function ( data ) {
-        //                     alert("ajax callback response:" + data);
-        // }).fail(function(){alert('error')})
-        
+        //                     console.log("ajax callback response");
+        // })
 
+// for python
+        $.ajax({
+          type: "POST",
+          url: "http://127.0.0.1:8000",
+          crossDomain:true, 
+          dataType: "json",
+          // JSON.stringify()用于从一个对象解析出字符串
+          data:JSON.stringify({bk_loc: AI.black_loc})
+                    }).done(function ( data ) {
+                            console.log("ajax callback response:" + data);
+        }).fail(function(){console.log('error')})  
 
         // 自动开始下一局
-        Game.restart()
+        // Game.restart()
 
-        // function callback(v) {
-        //     if (v == 'replay')
-        //         Game.restart();
-        //     else
-        //         Game.stop();
-        // }
+        function callback(v) {
+            if (v == 'replay')
+                Game.restart();
+            else
+                Game.stop();
+        }
 
-        // $.prompt(text, {
-        //     buttons : {
-        //         重新开始 : 'replay',
-        //         退出 : 'quit',
-        //     },
-        //     callback : callback,
-        // });
+        $.prompt(text, {
+            buttons : {
+                重新开始 : 'replay',
+                退出 : 'quit',
+            },
+            callback : callback,
+        });
     },
     // 移一步
     step : function() {

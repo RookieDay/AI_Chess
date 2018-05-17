@@ -190,7 +190,7 @@ if __name__ == "__main__":
                       memory_size=2000,
                       # output_graph=True
                       )
-    file_path = os.getcwd() + '\\ajax.txt'
+    file_path = os.getcwd() + '\\ajax_aa.txt'
     parse_txt(file_path)
     RL.plot_cost()
     # s = '11.200000000000728'

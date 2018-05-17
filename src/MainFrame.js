@@ -116,7 +116,7 @@ MainFrame = {
                     人类 : playerHuman,
                     // 简单AI : playerEasy,
                     // 普通AI : playerNormal,
-                    AI : playerHard,
+                    AI : playerNormal,
                     // Deep: playerEasy,
 
                 },

@@ -56,8 +56,8 @@ AI = {
     init : function() {
         this._init_hash_key();
     },
-    // 下一步棋 for DQN
-    play_DQN_chess : function(camp) {
+    // 下一步棋 
+    play_a_chess : function(camp) {
         this.best_move = null;
         this.break_time = 0;
         this.search_time = 0;
@@ -94,7 +94,7 @@ AI = {
             var m = this.best_move;
             Game.move_chess(m.fx, m.fy, m.tx, m.ty, {move_action : true});
             val = 18888;
-            this.best_move = null;
+            // this.best_move = null;
         }
         else {
             var index = Math.floor(Math.random() * this.candidate_move.length);
@@ -113,8 +113,8 @@ AI = {
         console.log('score = ', val);
         console.log('time = ', (this.end_time - this.start_time) / 1000);
     },
-    // 下一步棋
-    play_a_chess : function(camp) {
+    // DQN
+    play_DQN_chess : function(camp) {
         
         var save_chess = MoveGenerator.get_chesses()
         var arr = []
