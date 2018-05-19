@@ -142,11 +142,13 @@ def parse_txt(file_path):
         step = 0
         for i in range(0,data_len - 2,3):
             if i + 3 < data_len - 2 :
+                print('AAAAAAAAAA')
                 origin_chess, long_chess = state_chess(data[i])
                 move_way = action_chess(origin_chess,data[i+1])
                 reward_value = reward_chess(data[i+2])
                 origin_chess_, long_chess_ = state_chess(data[i+3])
-                # print(trans_A_to_action(origin_chess,move_way))
+                print(move_way)
+                print(trans_A_to_action(origin_chess,move_way))
                 # RL.store_transition(long_chess, move_way, reward_value, long_chess_)
             # if (step > 10) and (step % 5 == 0):
             #     RL.learn()

@@ -123,7 +123,7 @@ AI = {
                 arr.push(save_chess[y][x]);
             }
         }
-        
+
         $.ajax({
           type: "POST",
           url: "http://127.0.0.1:8000",
@@ -132,8 +132,9 @@ AI = {
           // JSON.stringify()用于从一个对象解析出字符串
           data:JSON.stringify({chess_state: arr})
                     }).done(function ( data ) {
-                            alert("ajax callback response:" + data);
-        }).fail(function(){alert('error')})      
+                            console.log("ajax callback response:" + data);
+        }).fail(function(){console.log('error')})
+     
     },
 
     store_tranisition : function(camp,move,val,bf_chess,chesses_store){

@@ -1,6 +1,6 @@
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 import json
-
+import demjson
 
 class testHTTPServer_RequestHandler(SimpleHTTPRequestHandler):
     def _set_headers(self):
@@ -15,9 +15,12 @@ class testHTTPServer_RequestHandler(SimpleHTTPRequestHandler):
         print(self.headers['content-type'])
         self.data_string = self.rfile.read(int(self.headers['Content-Length']))
         self._set_headers()
-
-        data = json.loads(self.data_string)
+        # for python 3.6
+        # data = json.loads(demjson.decode(self.data_string))
+        # for python 3.5
+        data = json.loads(self.data_string.decode())
         print(data)
+
         js_da = {"ana":"11"}
         js_du = json.dumps(js_da)
         print(js_du.encode())

@@ -85,8 +85,6 @@ def trans_action_to_A(chesses,action):
 def trans_A_to_action(chesses,A):
     i = 0  #计数器（棋盘中第几个棋子）
     chess_action_tmp = chess_action[A]  #保存动作矩阵中A的元素
-    print('*********************')
-    print(chess_action_tmp)
     #print(chess_action[A,1])
     while(chess_action_tmp[0,0] < -7):   
         i = i + 1
@@ -114,9 +112,9 @@ def trans_S(chesses):
     return S.flatten()
 
 def state_chess(data):
-    if data.__len__() == 90:
-        # line_loc = data.strip().split(',')
-        numbers_loc = [int(l) for l in data]
+    if data.strip().__len__() > 100:
+        line_loc = data.strip().split(',')
+        numbers_loc = [int(l) for l in line_loc]
         origin_chess = np.array(numbers_loc).reshape(10, 9)
         # 拉长后的chess 1*96
         long_chess = trans_S(numbers_loc)
@@ -158,17 +156,29 @@ def parse_txt(file_path):
                 RL.learn()
             step = step + 1
 
-def run_this(chesses):
-    print(chesses)
-    # 90          1*96的
-    origin_chess, long_chess = state_chess(chesses)
-    action = RL.choose_action(long_chess)
-    move_way = trans_A_to_action(origin_chess,[action])
-    
-    # move_way = action_chess(origin_chess,action_char.strip(','))
-    # reward_value = reward_chess(reward_char.strip(','))
-    # origin_chess_, long_chess_ = state_chess(state_char_[1:])
-
+        # for line in data:
+        #     x = 0
+        #     # print(line.strip())
+        #     # print(line.strip().__len__())
+        #     if line.strip().__len__() > 100 :
+        #         line_loc = line.strip().split(',')
+        #         numbers_loc = [int(l) for l in line_loc]
+        #         origin_chess = np.array(numbers_loc).reshape(10,9)
+        #     #     # print(origin_chess)
+        #     #     # 拉长后的chess 1*96
+        #     #     chess = trans_S(numbers_loc)
+        #     #     # print(chess.shape)
+        #     if line.strip().__len__() == 7 and line.strip().__contains__(',') == True:
+        #         move = line.strip().split(',')
+        #         numbers_move = [int(l) for l in move ]
+        #         # print('aaa')
+        #         # print(origin_chess)
+        #         move_way = trans_action_to_A(origin_chess, numbers_move)
+        #         # print(move_way)
+        #     if line.strip().__contains__(',') == False :
+        #         move = line.strip().split(',')
+        #         numbers_move = [float(l) for l in move ]
+        #         print(numbers_move)
 class testHTTPServer_RequestHandler(SimpleHTTPRequestHandler):
     def _set_headers(self):
         self.send_response(200)
@@ -183,15 +193,11 @@ class testHTTPServer_RequestHandler(SimpleHTTPRequestHandler):
         self.data_string = self.rfile.read(int(self.headers['Content-Length']))
         self._set_headers()
 
-        # for python 3.6
-        # data = json.loads(demjson.decode(self.data_string))
-        # for python 3.5
-        data = json.loads(self.data_string.decode())
-        chesses = data['chess_state']
-        run_this(chesses)
+        data = json.loads(self.data_string)
+        print(data)
         js_da = {"ana":"11"}
         js_du = json.dumps(js_da)
-        # print(js_du.encode())
+        print(js_du.encode())
         self.wfile.write(js_du.encode())
 
 
@@ -218,8 +224,8 @@ if __name__ == "__main__":
                       )
     file_path = os.getcwd() + '\\ajax_aa.txt'
     run()
-    # parse_txt(file_path)
-    # RL.plot_cost()
+    parse_txt(file_path)
+    RL.plot_cost()
     # s = '11.200000000000728'
     # print(s.__contains__('.'))
     # print(np.loadtxt(file_path))

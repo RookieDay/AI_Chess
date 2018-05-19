@@ -73,18 +73,18 @@ class DeepQNetwork:
 
         # ------------------ build evaluate_net ------------------
         with tf.variable_scope('eval_net'):
-            e1 = tf.layers.dense(self.s, 20, tf.nn.relu, kernel_initializer=w_initializer,
+            e1 = tf.layers.dense(self.s, 100, tf.nn.relu, kernel_initializer=w_initializer,
                                  bias_initializer=b_initializer, name='e1')
-            e2 = tf.layers.dense(e1, 20, tf.nn.relu, kernel_initializer=w_initializer,
+            e2 = tf.layers.dense(e1, 100, tf.nn.relu, kernel_initializer=w_initializer,
                                  bias_initializer=b_initializer, name='e2')
             self.q_eval = tf.layers.dense(e2, self.n_actions, kernel_initializer=w_initializer,
                                           bias_initializer=b_initializer, name='q')
 
         # ------------------ build target_net ------------------
         with tf.variable_scope('target_net'):
-            t1 = tf.layers.dense(self.s_, 20, tf.nn.relu, kernel_initializer=w_initializer,
+            t1 = tf.layers.dense(self.s_, 100, tf.nn.relu, kernel_initializer=w_initializer,
                                  bias_initializer=b_initializer, name='t1')
-            tx = tf.layers.dense(t1, 20, tf.nn.relu, kernel_initializer=w_initializer,
+            tx = tf.layers.dense(t1, 100, tf.nn.relu, kernel_initializer=w_initializer,
                                  bias_initializer=b_initializer, name='tx')
             self.q_next = tf.layers.dense(tx, self.n_actions, kernel_initializer=w_initializer,
                                           bias_initializer=b_initializer, name='t2')
@@ -120,6 +120,21 @@ class DeepQNetwork:
         else:
             action = np.random.randint(0, self.n_actions)
         return action
+
+    # def choose_action(self, observation, A):
+    #     # to have batch dimension when feed into tf placeholder
+    #     observation = observation[np.newaxis, :]
+
+    #     if np.random.uniform() < self.epsilon:
+    #         # forward feed the observation and get q value for every actions
+    #         actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
+    #         tmp_val = actions_value[0]
+    #         for i in range(186):
+    #             if (A[i] == 1 and tmp_val <= actions_value[i]):
+    #                 action = i
+    #     else:
+    #         action = -1
+    #     return action
 
     def learn(self):
         self.saver.restore(self.sess, './model/model.ckpt' + '-'+ str(1))

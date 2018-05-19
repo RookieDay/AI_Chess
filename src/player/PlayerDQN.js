@@ -15,8 +15,8 @@ var Player = BObject.extend({
 
     run : function() {
         AI.set_max_depth(3);
-        AI.play_a_chess(this.camp);
-        // AI.play_DQN_chess(this.camp);
+        // AI.play_a_chess(this.camp);
+        AI.play_DQN_chess(this.camp);
         // 检查是否被将军
         Game.check_king();
     },
