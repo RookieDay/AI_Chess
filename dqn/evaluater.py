@@ -1,26 +1,46 @@
-# // Evaluater.js
-# // Created by MonkeyShen 2012
-# // 估值器，根据棋盘局面进行估值
-# // 考虑：
-# // * 基础棋子价值
-# // * 棋子机动性
-# // * 棋子攻击点
-# // * 棋子防守点
-# // * 空心炮
-# // * 窝心马
+# # // Evaluater.js
+# # // Created by MonkeyShen 2012
+# # // 估值器，根据棋盘局面进行估值
+# # // 考虑：
+# # // * 基础棋子价值
+# # // * 棋子机动性
+# # // * 棋子攻击点
+# # // * 棋子防守点
+# # // * 空心炮
+# # // * 窝心马
+# // 所有棋子
 
-# // 不同棋子的基本价值
- VAL_PAWN        = 120 
- VAL_BISHOP      = 250
- VAL_ELEPHANT    = 250
- VAL_CAR         = 500
- VAL_HORSE       = 350
- VAL_CANNON      = 350
- VAL_KING        = 10000
+B_CAR = -1;
+B_HORSE = -2;
+B_ELEPHANT = -3;
+B_BISHOP = -4;
+B_KING = -5;
+B_CANNON = -6;
+B_PAWN = -7;
+R_CAR = 1;
+R_HORSE = 2;
+R_ELEPHANT = 3;
+R_BISHOP = 4;
+R_KING = 5;
+R_CANNON = 6;
+R_PAWN = 7;
+NOCHESS = 0;
 
- _chess_values = [] 
+# // 阵营
+CAMP_RED = 1;
+CAMP_BLACK = -1;
+# # // 不同棋子的基本价值
+VAL_PAWN        = 120 
+VAL_BISHOP      = 250
+VAL_ELEPHANT    = 250
+VAL_CAR         = 500
+VAL_HORSE       = 350
+VAL_CANNON      = 350
+VAL_KING        = 10000
 
-// +7为的是让他们能状态数组中
+_chess_values = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] 
+
+# # // +7为的是让他们能状态数组中
 _chess_values[7 + R_PAWN]       = VAL_PAWN;
 _chess_values[7 + R_BISHOP]     = VAL_BISHOP;
 _chess_values[7 + R_ELEPHANT]   = VAL_ELEPHANT;
@@ -37,17 +57,17 @@ _chess_values[7 + B_HORSE]      = VAL_HORSE;
 _chess_values[7 + B_CANNON]     = VAL_CANNON;
 _chess_values[7 + B_KING]       = VAL_KING;
 
-// 不同棋子的灵活度
- FLEXIBILITY_PAWN        = 15 
- FLEXIBILITY_BISHOP      = 1
- FLEXIBILITY_ELEPHANT    = 1
- FLEXIBILITY_CAR         = 6
- FLEXIBILITY_HORSE       = 12
- FLEXIBILITY_CANNON      = 6
- FLEXIBILITY_KING        = 0
+# // 不同棋子的灵活度
+FLEXIBILITY_PAWN        = 15 
+FLEXIBILITY_BISHOP      = 1
+FLEXIBILITY_ELEPHANT    = 1
+FLEXIBILITY_CAR         = 6
+FLEXIBILITY_HORSE       = 12
+FLEXIBILITY_CANNON      = 6
+FLEXIBILITY_KING        = 0
 
- _chess_fexibility = []
-//  卒 士 象 车 马 炮 将
+_chess_fexibility =  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] 
+# //  卒 士 象 车 马 炮 将
 _chess_fexibility[7 + R_PAWN]       = FLEXIBILITY_PAWN;
 _chess_fexibility[7 + R_BISHOP]     = FLEXIBILITY_BISHOP;
 _chess_fexibility[7 + R_ELEPHANT]   = FLEXIBILITY_ELEPHANT;
@@ -64,9 +84,8 @@ _chess_fexibility[7 + B_HORSE]      = FLEXIBILITY_HORSE;
 _chess_fexibility[7 + B_CANNON]     = FLEXIBILITY_CANNON;
 _chess_fexibility[7 + B_KING]       = FLEXIBILITY_KING;
 
-// 兵在不同位置的价值
- _pawn_values =
-[
+# // 兵在不同位置的价值
+_pawn_values = [
     [0,  0,  0,  0,  0,  0,  0,  0,  0],
 	[90,90,110,120,120,120,110,90,90  ],
 	[90,90,110,120,120,120,110,90,90  ],
@@ -79,53 +98,58 @@ _chess_fexibility[7 + B_KING]       = FLEXIBILITY_KING;
 	[0,  0,  0,  0,  0,  0,  0,  0,  0],
 ];
 
-
-
+ 
+relate_poses = []
+cur_chess = 0;
+cur_target_chess = 0;
+sum_value = 0;
+flag = True;
+x = 0;
+y = 0;
 
 def evalute(chesses, camp_turn):
 
- 
-     relate_poses = []
-     cur_chess;
-     cur_target_chess;
-     sum_value = 0;
-    
-    # // 初始化二维数组
-     chess_values = new Array(10);
-     flex_poses   = new Array(10);
-     guard_poses  = new Array(10);
-     attack_poses = new Array(10);
 
-    for i in range(10) :
-        chess_values[i] = new Array(0,0,0,0,0,0,0,0,0);
-        flex_poses[i]   = new Array(0,0,0,0,0,0,0,0,0);
-        guard_poses[i]  = new Array(0,0,0,0,0,0,0,0,0);
-        attack_poses[i] = new Array(0,0,0,0,0,0,0,0,0);
     
-    # // 估值
+    # # // 初始化二维数组
+    chess_values = [[],[],[],[],[],[],[],[],[],[]];
+    flex_poses   = [[],[],[],[],[],[],[],[],[],[]];
+    guard_poses  = [[],[],[],[],[],[],[],[],[],[]];
+    attack_poses = [[],[],[],[],[],[],[],[],[],[]];
+
+    # for i in range(10):
+    #     chess_values[i] = new Array(0,0,0,0,0,0,0,0,0);
+    #     flex_poses[i]   = new Array(0,0,0,0,0,0,0,0,0);
+    #     guard_poses[i]  = new Array(0,0,0,0,0,0,0,0,0);
+    #     attack_poses[i] = new Array(0,0,0,0,0,0,0,0,0);
+    
+    for i in range(10):
+        chess_values[i] = [0,0,0,0,0,0,0,0,0];
+        flex_poses[i]   = [0,0,0,0,0,0,0,0,0];
+        guard_poses[i]  = [0,0,0,0,0,0,0,0,0];
+        attack_poses[i] = [0,0,0,0,0,0,0,0,0];
+    # # // 估值
     for i in range(10):
         for j in range(9):
             if(chesses[i][j] == NOCHESS):
                 continue;
-            # // 获取所有与本棋子相关的位置
+            # # // 获取所有与本棋子相关的位置
             cur_chess = chesses[i][j];
             _get_relate_piece(chesses, j, i);
 
-            # // 求机动性/防守值/攻击值
-            for k in range(relate_poses.length) :
+            # # // 求机动性/防守值/攻击值
+            for k in range(relate_poses.length):
                 cur_target_chess = chesses[relate_poses[k].y][relate_poses[k].x];
-                if (cur_target_chess == NOCHESS) :
-                    flex_poses[i][j]++;	
-                else :
-                     y = relate_poses[k].y;
-                     x = relate_poses[k].x;
-
-                    if (cur_chess * cur_target_chess > 0) :
-                        guard_poses[y][x]++;
-                    
-                    else :
-                        attack_poses[y][x]++;
-                        flex_poses[i][j]++;	
+                if (cur_target_chess == NOCHESS):
+                    flex_poses[i][j] = flex_poses[i][j]+1;	
+                else:
+                    y = relate_poses[k].y;
+                    x = relate_poses[k].x;
+                    if (cur_chess * cur_target_chess > 0):
+                       guard_poses[y][x] = guard_poses[y][x]+1;
+                    else:
+                        attack_poses[y][x] = attack_poses[y][x]+1;
+                        flex_poses[i][j] = flex_poses[i][j]+1;	
                         for case in switch (cur_target_chess):
                             if case(R_KING):
                                 if (camp_turn == CAMP_BLACK):
@@ -136,62 +160,62 @@ def evalute(chesses, camp_turn):
                                     return 18888;
                                 break;
                             if case():
-                                // 考虑攻击的棋子的价值
-                                // attack_poses[relate_poses[k].y][relate_poses[k].x] += (30 + (_chess_values[cur_target_chess + 7] - _chess_values[cur_chess + 7])/10)/10;
+                                # // 考虑攻击的棋子的价值
+                                # // attack_poses[relate_poses[k].y][relate_poses[k].x] += (30 + (_chess_values[cur_target_chess + 7] - _chess_values[cur_chess + 7])/10)/10;
                                 attack_poses[y][x] += _chess_values[cur_target_chess + 7] / 100;
                                 break;
-            # // 空心炮
-            if (cur_chess == R_CANNON) :
-                # // 红炮
-                 x = j;
-                 y = i - 1;
-                 flag = true;
-                while (y >= 0) :
-                     tc = chesses[y][x];
-                    if (tc != NOCHESS && tc != B_KING) :
+            # # // 空心炮
+            if (cur_chess == R_CANNON):
+                # # // 红炮
+                x = j;
+                y = i - 1;
+                flag = true;
+                while (y >= 0):
+                    tc = chesses[y][x];
+                    if (tc != NOCHESS and tc != B_KING):
                         flag = false;
                         break;
-                    y --;
+                    y = y -1;
                 if (flag):
                     chess_values[i][j] += 150 * camp_turn;
-            elif (cur_chess == B_CANNON) :
-                # // 黑炮
-                 x = j;
-                 y = i + 1;
-                 flag = true;
-                while (y < 10) :
-                     tc = chesses[y][x];
-                    if (tc != NOCHESS && tc != R_KING) :
+            elif (cur_chess == B_CANNON):
+                # # // 黑炮
+                x = j;
+                y = i + 1;
+                flag = true;
+                while (y < 10):
+                    tc = chesses[y][x];
+                    if (tc != NOCHESS and tc != R_KING):
                         flag = false;
                         break;
-                    y ++;
+                    y = y +1;
                 if (flag):
                     chess_values[i][j] -= 150 * camp_turn;
 
-            # // 窝心马
-            if (cur_chess == R_HORSE) :
-                if (x == 4 && y == 1) :
+            # # // 窝心马
+            if (cur_chess == R_HORSE):
+                if (x == 4 and y == 1):
                     chess_values[i][j] -= 100 * camp_turn;
              
-            elif (cur_chess == B_HORSE) :
-                if (x == 4 && y == 8) :
+            elif (cur_chess == B_HORSE):
+                if (x == 4 and y == 8):
                     chess_values[i][j] += 100 * camp_turn;
                 
 
-    # // 小兵的价值 + 机动性
-    for i in range(10)：
+    # # // 小兵的价值 + 机动性
+    for i in range(10):
         for j in range(9):
-            if(chesses[i][j] != NOCHESS) :
+            if(chesses[i][j] != NOCHESS):
                 cur_chess = chesses[i][j];
-                # // 机动性
+                # # // 机动性
                 chess_values[i][j] += _chess_fexibility[cur_chess + 7] * flex_poses[i][j];
 
-                # // 小兵价值
+                # # // 小兵价值
                 chess_values[i][j] += _get_bing_value(j, i, chesses);
     
 
-    # // 综合攻击点/防守点 改变每个棋子本身的价值
-     half_value;
+    # # // 综合攻击点/防守点 改变每个棋子本身的价值
+     # half_value;
     for i in range(10):
         for j in rage(9):
             cur_chess = chesses[i][j];
@@ -199,12 +223,12 @@ def evalute(chesses, camp_turn):
             
                 half_value = _chess_values[cur_chess + 7]/16;
 
-                # // 基础价值
+                # # // 基础价值
                 chess_values[i][j] += _chess_values[cur_chess + 7];
                 
                 if (cur_chess > 0):
                 
-                    # // 红棋
+                    # # // 红棋
                     if (attack_poses[i][j]):
                     
                         if (camp_turn == CAMP_RED):
@@ -237,24 +261,21 @@ def evalute(chesses, camp_turn):
                 
                 else:
                 
-                    // 黑棋
+                    # // 黑棋
                     if (attack_poses[i][j]):
                 
-                        if (camp_turn == CAMP_BLACK)：
+                        if (camp_turn == CAMP_BLACK):
                         
-                            if (cur_chess == B_KING)：
+                            if (cur_chess == B_KING):
                             
                                 chess_values[i][j]-= 20;
                             
-                            else：
+                            else:
                             
                                 chess_values[i][j] -= half_value * 2;
-                                if (guard_poses[i][j])：
+                                if (guard_poses[i][j]):
                                     chess_values[i][j] += half_value;
-                            
-                        
                         else:
-                        
                             if (cur_chess == B_KING):
                                 return 18888;
                             chess_values[i][j] -= half_value*10;
@@ -269,14 +290,14 @@ def evalute(chesses, camp_turn):
                             chess_values[i][j] += 5;
 
 
-    // 总结棋子价值
+    # // 总结棋子价值
     for i in range(10):
         for j in range(9):
         
             cur_chess = chesses[i][j];
             if (cur_chess != NOCHESS):
             
-                 val = chess_values[i][j];
+                val = chess_values[i][j];
                 if (cur_chess > 0):
                     sum_value += val;
                 else:
@@ -286,14 +307,14 @@ def evalute(chesses, camp_turn):
     return sum_value * camp_turn;
 
 
-    # // 增加相关点
+    # # // 增加相关点
 def _add_point (x, y):
     
-    relate_poses.push({x : x, y : y});
+    relate_poses.push({x: x, y: y});
     
 
-    // 获取小兵价值
- def _get_bing_value(x, y, chesses):
+    # // 获取小兵价值
+def _get_bing_value(x, y, chesses):
     
     if (chesses[y][x] == R_PAWN):
         return _pawn_values[y][x];
@@ -303,17 +324,16 @@ def _add_point (x, y):
 
     return 0;
 
-    // 获取相关棋子
+    # // 获取相关棋子
 def _get_relate_piece(chesses, j, i):
-         flag;
-         x,y;
+
 
         relate_poses = [];
         chess = chesses[i][j];
 
         for case in switch(chess):
             
-            if case(R_KING) || case(B_KING ):
+            if case(R_KING) or case(B_KING ):
                 
                 for y in range(3):
                     for x in range(3,6):
@@ -321,7 +341,7 @@ def _get_relate_piece(chesses, j, i):
                             _add_point(x, y);
                 for y in range(7,10):
                     for x in range(3,6):
-                        if (MoveGenerator.is_valid_move(j, i, x, y))
+                        if (MoveGenerator.is_valid_move(j, i, x, y)):
                             _add_point(x, y);
                 break;
                                 
@@ -329,78 +349,78 @@ def _get_relate_piece(chesses, j, i):
                 
                 for y in range(7,10):
                     for x in range(3,6):
-                        if (MoveGenerator.is_valid_move(j, i, x, y))
+                        if (MoveGenerator.is_valid_move(j, i, x, y)):
                             _add_point(x, y);
                 break;
             if case(B_BISHOP):                       
                 for y in range(3):
                     for x in range(3,6):
-                        if (MoveGenerator.is_valid_move(j, i, x, y))
+                        if (MoveGenerator.is_valid_move(j, i, x, y)):
                             _add_point(x, y);
                 break;
-            if case(R_ELEPHANT) || case(B_ELEPHANT):                 
+            if case(R_ELEPHANT) or case(B_ELEPHANT):                 
                 x=j+2;
                 y=i+2;
-                if(x < 9 && y < 10  && MoveGenerator.is_valid_move(j, i, x, y)):
+                if(x < 9 and y < 10  and MoveGenerator.is_valid_move(j, i, x, y)):
                     _add_point(x, y);
                 
                 x=j+2;
                 y=i-2;
-                if(x < 9 && y>=0  &&  MoveGenerator.is_valid_move(j, i, x, y)):
+                if(x < 9 and y>=0  and  MoveGenerator.is_valid_move(j, i, x, y)):
                     _add_point(x, y);
                 
                 x=j-2;
                 y=i+2;
-                if(x>=0 && y < 10  && MoveGenerator.is_valid_move(j, i, x, y)):
+                if(x>=0 and y < 10  and MoveGenerator.is_valid_move(j, i, x, y)):
                     _add_point(x, y);
                 
                 x=j-2;
                 y=i-2;
-                if(x>=0 && y>=0  && MoveGenerator.is_valid_move(j, i, x, y)):
+                if(x>=0 and y>=0  and MoveGenerator.is_valid_move(j, i, x, y)):
                     _add_point(x, y);
 
                 break;
                 
-            if case(R_HORSE) || case(B_HORSE):		
+            if case(R_HORSE) or case(B_HORSE):		
                 x=j+2;
                 y=i+1;
-                if((x < 9 && y < 10) && MoveGenerator.is_valid_move(j, i, x, y)):
+                if((x < 9 and y < 10) and MoveGenerator.is_valid_move(j, i, x, y)):
                     _add_point(x, y);
                         
                 x=j+2;
                 y=i-1;
-                if((x < 9 && y >= 0) && MoveGenerator.is_valid_move(j, i, x, y)):
+                if((x < 9 and y >= 0) and MoveGenerator.is_valid_move(j, i, x, y)):
                     _add_point(x, y);
                 
                 x=j-2;
                 y=i+1;
-                if((x >= 0 && y < 10) && MoveGenerator.is_valid_move(j, i, x, y)):
+                if((x >= 0 and y < 10) and MoveGenerator.is_valid_move(j, i, x, y)):
                     _add_point(x, y);
                 
                 x=j-2;
                 y=i-1;
-                if((x >= 0 && y >= 0) && MoveGenerator.is_valid_move(j, i, x, y)):
+                if((x >= 0 and y >= 0) and MoveGenerator.is_valid_move(j, i, x, y)):
                     _add_point(x, y);
                 
                 x=j+1;
                 y=i+2;
-                if((x < 9 && y < 10) && MoveGenerator.is_valid_move(j, i, x, y)):
+                if((x < 9 and y < 10) and MoveGenerator.is_valid_move(j, i, x, y)):
                     _add_point(x, y);
                 x=j-1;
                 y=i+2;
-                if((x >= 0 && y < 10) && MoveGenerator.is_valid_move(j, i, x, y)):
+                if((x >= 0 and y < 10) and MoveGenerator.is_valid_move(j, i, x, y)):
                     _add_point(x, y);
                 x=j+1;
                 y=i-2;
-                if((x < 9 && y >= 0) && MoveGenerator.is_valid_move(j, i, x, y)):
+                if((x < 9 and y >= 0) and MoveGenerator.is_valid_move(j, i, x, y)):
                     _add_point(x, y);
                 x=j-1;
                 y=i-2;
-                if((x >= 0 && y >= 0) && MoveGenerator.is_valid_move(j, i, x, y)):
+                if((x >= 0 and y >= 0) and MoveGenerator.is_valid_move(j, i, x, y)):
                     _add_point(x, y);
                 break;
                 
-            if case(R_CAR) || case(B_CAR):
+            if case(R_CAR) or case(B_CAR):
                 x = j + 1;
                 y = i;
                 while(x < 9):
@@ -412,7 +432,7 @@ def _get_relate_piece(chesses, j, i):
                         _add_point(x, y);
                         break;
                     
-                    x++;
+                    x = x+ 1;
                 
                 
                 x = j-1;
@@ -426,7 +446,7 @@ def _get_relate_piece(chesses, j, i):
                         _add_point(x, y);
                         break;
                     
-                    x--;
+                    x = x- 1;
                 
                 
                 x = j;
@@ -440,7 +460,7 @@ def _get_relate_piece(chesses, j, i):
                         _add_point(x, y);
                         break;
                     
-                    y++;
+                    y = y+1;
                 
                 
                 x = j;
@@ -454,7 +474,7 @@ def _get_relate_piece(chesses, j, i):
                         _add_point(x, y);
                         break;
                     
-                    y--;
+                    y = y-1;
                 
                 break;
                 
@@ -477,7 +497,7 @@ def _get_relate_piece(chesses, j, i):
                 
                 break;
                 
-            if case(B_PAWN) :
+            if case(B_PAWN):
                 y = i + 1;
                 x = j;
                 
@@ -496,7 +516,7 @@ def _get_relate_piece(chesses, j, i):
                 
                 break;
                 
-            if case(B_CANNON) ||  case(R_CANNON) :
+            if case(B_CANNON) or  case(R_CANNON):
                 
                 x = j + 1;
                 y = i;
@@ -505,20 +525,20 @@ def _get_relate_piece(chesses, j, i):
                 
                     if( NOCHESS == chesses[y][x] ):
                     
-                        if(!flag):
+                        if(not flag):
                             _add_point(x, y);
                     
                     else:
                     
-                        if(!flag):
+                        if(not flag):
                             flag=true;
-                        else :
+                        else:
                         
                             _add_point(x, y);
                             break;
                         
                     
-                    x++;
+                    x = x+1;
                 
                 
                 x = j - 1;
@@ -527,20 +547,20 @@ def _get_relate_piece(chesses, j, i):
                 
                     if( NOCHESS == chesses[y][x] ):
                     
-                        if(!flag):
+                        if(not flag):
                             _add_point(x, y);
                     
-                    else
+                    else:
                     
-                        if(!flag):
+                        if(not flag):
                             flag=true;
-                        else :
+                        else:
                         
                             _add_point(x, y);
                             break;
                     
                     
-                    x--;
+                    x= x-1;
                 
                 x = j;	
                 y = i + 1;
@@ -549,20 +569,20 @@ def _get_relate_piece(chesses, j, i):
                 
                     if( NOCHESS == chesses[y][x] ):
                     
-                        if(!flag):
+                        if(not flag):
                             _add_point(x, y);
                     
                     else:
                     
-                        if(!flag):
+                        if(not flag):
                             flag=true;
-                        else :
+                        else:
                         
                             _add_point(x, y);
                             break;
                         
                     
-                    y++;
+                    y = y + 1;
                 
                 
                 y= i - 1;
@@ -571,20 +591,20 @@ def _get_relate_piece(chesses, j, i):
                 
                     if( NOCHESS == chesses[y][x] ):
                     
-                        if(!flag):
+                        if(not flag):
                             _add_point(x, y);
                     
                     else:
                     
-                        if(!flag):
+                        if(not flag):
                             flag=true;
-                        else :
+                        else:
                         
                             _add_point(x, y);
                             break;
                         
                     
-                    y--;
+                    y = y-1;
                 
                 break;
                 

@@ -5,7 +5,7 @@ import json
 # from maze_env import Maze
 from DQN_modified import DeepQNetwork
 from server import testHTTPServer_RequestHandler
-
+from evaluater import *
 # 阵营
 CAMP_RED = 1
 CAMP_BLACK = -1
@@ -80,6 +80,15 @@ def trans_action_to_A(chesses,action):
             #else:
                 #chess_action_tmp=[chesses[action[1],action[0]]+i*7,action[3]-action[1],action[2]-action[0]]
     return False
+#定义一个trans_movelist_to_A，输入move_list二维数组，输出所有对应的A数组,数组形式为长度为186的一维数组：A[0,0,0,1,0,1,...,0,0]，1对应action中可能的走法
+def trans_movelist_to_A(chesses,move_list):
+    A = np.zeros(186,int)
+    print(len(move_list))
+    for i in range(len(move_list)):
+        print(move_list[i])
+        A[trans_action_to_A(chesses,move_list[i])] = 1
+
+    return A
 
 #定义个trans_A_to_action()，输入棋盘矩阵、A，返回A对应的action(x,y,tx,ty)
 def trans_A_to_action(chesses,A):
@@ -164,7 +173,8 @@ def run_this(chesses):
     origin_chess, long_chess = state_chess(chesses)
     action = RL.choose_action(long_chess)
     move_way = trans_A_to_action(origin_chess,[action])
-    
+    reward = evalute(origin_chess,-1)
+    print(reward)
     # move_way = action_chess(origin_chess,action_char.strip(','))
     # reward_value = reward_chess(reward_char.strip(','))
     # origin_chess_, long_chess_ = state_chess(state_char_[1:])
